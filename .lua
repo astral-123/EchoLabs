@@ -1,4 +1,4 @@
--- insert troll face, memcorruptv2
+-- By EchoLabs
 local library = { 
 	flags = { }, 
 	items = { } 
@@ -3411,7 +3411,7 @@ function library:CreateWindow(name, size, hidebutton)
         return tab
     end
 
-    -- Tab ⚙ automatique pour le keybind Hide/Show
+    -- Tab ⚙ automatique pour le keybind Hide/Show + Couleurs
     local settingsTab = window:CreateTab("⚙")
     local settingsSector = settingsTab:CreateSector("Keybind", "left")
 
@@ -3426,6 +3426,63 @@ function library:CreateWindow(name, size, hidebutton)
         function() end,
         "settings_hide_key"
     )
+
+    -- Secteur couleurs UI (côté gauche)
+    local colorSectorLeft = settingsTab:CreateSector("Couleurs UI", "left")
+
+    colorSectorLeft:AddColorpicker("Accent", window.theme.accentcolor, function(color)
+        window.theme.accentcolor = color
+        window:UpdateTheme(window.theme)
+    end, "settings_accentcolor")
+
+    colorSectorLeft:AddColorpicker("Accent 2", window.theme.accentcolor2, function(color)
+        window.theme.accentcolor2 = color
+        window:UpdateTheme(window.theme)
+    end, "settings_accentcolor2")
+
+    colorSectorLeft:AddColorpicker("Fond", window.theme.backgroundcolor, function(color)
+        window.theme.backgroundcolor = color
+        window:UpdateTheme(window.theme)
+    end, "settings_backgroundcolor")
+
+    colorSectorLeft:AddColorpicker("Top Bar", window.theme.topcolor, function(color)
+        window.theme.topcolor = color
+        window.theme.topcolor2 = color
+        window:UpdateTheme(window.theme)
+    end, "settings_topcolor")
+
+    colorSectorLeft:AddColorpicker("Secteurs", window.theme.sectorcolor, function(color)
+        window.theme.sectorcolor = color
+        window:UpdateTheme(window.theme)
+    end, "settings_sectorcolor")
+
+    -- Secteur couleurs texte (côté droit)
+    local colorSectorRight = settingsTab:CreateSector("Couleurs Texte", "right")
+
+    colorSectorRight:AddColorpicker("Texte Items", window.theme.itemscolor, function(color)
+        window.theme.itemscolor = color
+        window:UpdateTheme(window.theme)
+    end, "settings_itemscolor")
+
+    colorSectorRight:AddColorpicker("Texte Items 2", window.theme.itemscolor2, function(color)
+        window.theme.itemscolor2 = color
+        window:UpdateTheme(window.theme)
+    end, "settings_itemscolor2")
+
+    colorSectorRight:AddColorpicker("Texte Titre", window.theme.toptextcolor, function(color)
+        window.theme.toptextcolor = color
+        window:UpdateTheme(window.theme)
+    end, "settings_toptextcolor")
+
+    colorSectorRight:AddColorpicker("Texte Tabs", window.theme.tabstextcolor, function(color)
+        window.theme.tabstextcolor = color
+        window:UpdateTheme(window.theme)
+    end, "settings_tabstextcolor")
+
+    colorSectorRight:AddColorpicker("Contour", window.theme.outlinecolor, function(color)
+        window.theme.outlinecolor = color
+        window:UpdateTheme(window.theme)
+    end, "settings_outlinecolor")
 
     return window
 end
