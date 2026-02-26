@@ -47,7 +47,7 @@ library.theme = {
 
 -- Custom Cursor Logic (enhanced)
 -- Ensure 'Drawing' is available in the Roblox executor environment
-if library.theme.cursor and pcall(function() return Drawing end) then
+if library.theme.cursor and pcall(function() return Drawing end) and typeof(Drawing) == "table" and Drawing.new then
     local success, err = pcall(function() 
         library.cursor = Drawing.new("Image")
         library.cursor.Data = game:HttpGet(library.theme.cursorimg)
@@ -343,6 +343,5 @@ function library:CreateWindow(name, size, hidebutton)
     window.Title.ZIndex = 6
     updateevent.Event:Connect(function(theme)
         window.Title.Font = theme.font
-        window.Title.TextColor3 = theme.toptextcolor
-        window.Title.TextSiz
+        window.Title.TextColor3 = 
 (Content truncated due to size limit. Use line ranges to read remaining content)
