@@ -1,5 +1,5 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/cat"))() --you can go into the github link and copy all of it and modify it for yourself.
-local Window = Library:CreateWindow("cattoware UI Doc", Vector2.new(492, 598), Enum.KeyCode.RightControl) --you can change your UI keybind
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/astral-123/EchoLabs/refs/heads/main/.txt"))() --you can go into the github link and copy all of it and modify it for yourself.
+local Window = Library:CreateWindow("EchoLabs", Vector2.new(492, 598), Enum.KeyCode.V) --you can change your UI keybind
 local AimingTab = Window:CreateTab("Tab 1") --you can rename this tab to whatever you want --you can also change the tabs code, for example "AimingTab" can be changed to "FunnyCoolTab" etc.
 
 
@@ -40,3 +40,9 @@ end)
 ToggleBind:AddKeybind()
 
 AimingTab:CreateConfigSystem("right") --this is the config system
+
+
+
+local AimingSection = AimingTab:CreateSector("Discord", "right")
+
+AimingSection:AddLabel("Discord: .gg/ty9qwSr6Ya", Color3.fromRGB(180, 180, 180))
