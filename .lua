@@ -1,3 +1,4 @@
+-- insert troll face, memcorruptv2
 local library = { 
 	flags = { }, 
 	items = { } 
@@ -3422,9 +3423,7 @@ function library:CreateWindow(name, size, hidebutton)
                 window.hidekey = newKey
             end
         end,
-        function()
-            window.Frame.Visible = not window.Frame.Visible
-        end,
+        function() end,
         "settings_hide_key"
     )
 
