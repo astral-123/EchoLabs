@@ -1,4 +1,3 @@
--- By EchoLabs
 local library = { 
 	flags = { }, 
 	items = { } 
@@ -406,14 +405,13 @@ function library:CreateWindow(name, size, hidebutton)
     window.MinimizeBtn.Text = "-"
     window.MinimizeBtn.Font = window.theme.font
     window.MinimizeBtn.TextSize = 16
-    window.MinimizeBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-    window.MinimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    window.MinimizeBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    window.MinimizeBtn.BackgroundTransparency = 1
     window.MinimizeBtn.BorderSizePixel = 0
     window.MinimizeBtn.Size = UDim2.fromOffset(18, 18)
     window.MinimizeBtn.Position = UDim2.new(1, -40, 0, 4)
     window.MinimizeBtn.ZIndex = 10
     window.MinimizeBtn.AutoButtonColor = false
-    Instance.new("UICorner", window.MinimizeBtn).CornerRadius = UDim.new(0, 3)
 
     local minimized = false
     window.MinimizeBtn.MouseButton1Down:Connect(function()
@@ -425,10 +423,10 @@ function library:CreateWindow(name, size, hidebutton)
         end
     end)
     window.MinimizeBtn.MouseEnter:Connect(function()
-        tweenservice:Create(window.MinimizeBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
+        tweenservice:Create(window.MinimizeBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
     end)
     window.MinimizeBtn.MouseLeave:Connect(function()
-        tweenservice:Create(window.MinimizeBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+        tweenservice:Create(window.MinimizeBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(180, 180, 180)}):Play()
     end)
 
     -- Bouton Close (x)
@@ -437,23 +435,22 @@ function library:CreateWindow(name, size, hidebutton)
     window.CloseBtn.Text = "x"
     window.CloseBtn.Font = window.theme.font
     window.CloseBtn.TextSize = 14
-    window.CloseBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-    window.CloseBtn.BackgroundColor3 = Color3.fromRGB(160, 40, 40)
+    window.CloseBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
+    window.CloseBtn.BackgroundTransparency = 1
     window.CloseBtn.BorderSizePixel = 0
     window.CloseBtn.Size = UDim2.fromOffset(18, 18)
     window.CloseBtn.Position = UDim2.new(1, -18, 0, 4)
     window.CloseBtn.ZIndex = 10
     window.CloseBtn.AutoButtonColor = false
-    Instance.new("UICorner", window.CloseBtn).CornerRadius = UDim.new(0, 3)
 
     window.CloseBtn.MouseButton1Down:Connect(function()
         window.Main:Destroy()
     end)
     window.CloseBtn.MouseEnter:Connect(function()
-        tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(200, 60, 60)}):Play()
+        tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(220, 60, 60)}):Play()
     end)
     window.CloseBtn.MouseLeave:Connect(function()
-        tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(160, 40, 40)}):Play()
+        tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(180, 180, 180)}):Play()
     end)
 
     window.OpenedColorPickers = { }
