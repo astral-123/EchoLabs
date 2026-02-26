@@ -316,9 +316,10 @@ function library:CreateWindow(name, size, hidebutton)
         window.Frame.BackgroundColor3 = theme.backgroundcolor
     end)
 
-    -- Hide/show keybind
+    -- Hide/show keybind (window.hidekey est modifiable depuis la tab settings)
+    window.hidekey = window.hidebutton
     uis.InputBegan:Connect(function(key)
-        if key.KeyCode == window.hidebutton then
+        if key.KeyCode == window.hidekey then
             window.Frame.Visible = not window.Frame.Visible
         end
     end)
@@ -1932,6 +1933,27 @@ function library:CreateWindow(name, size, hidebutton)
         table.insert(window.Tabs, tab)
         return tab
     end
+
+    -- ============================================================
+    -- TAB ⚙ PARAMÈTRES (créée automatiquement dans le module)
+    -- ============================================================
+    local settTab = window:CreateTab("⚙")
+    local settSect = settTab:CreateSector("Keybind UI", "left")
+
+    settSect:AddKeybind(
+        "Touche Hide/Show",
+        window.hidekey,
+        function(newKey)
+            -- Met à jour la touche utilisée pour cacher/afficher l'UI
+            if newKey ~= "None" then
+                window.hidekey = newKey
+            end
+        end,
+        function()
+            window.Frame.Visible = not window.Frame.Visible
+        end,
+        "settings_hide_key"
+    )
 
     return window
 end
