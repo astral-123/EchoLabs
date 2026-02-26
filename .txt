@@ -46,8 +46,9 @@ library.theme = {
 }
 
 -- Custom Cursor Logic (enhanced)
-if library.theme.cursor and Drawing then
-    local success = pcall(function() 
+-- Ensure 'Drawing' is available in the Roblox executor environment
+if library.theme.cursor and pcall(function() return Drawing end) then
+    local success, err = pcall(function() 
         library.cursor = Drawing.new("Image")
         library.cursor.Data = game:HttpGet(library.theme.cursorimg)
         library.cursor.Size = Vector2.new(64, 64)
@@ -343,9 +344,5 @@ function library:CreateWindow(name, size, hidebutton)
     updateevent.Event:Connect(function(theme)
         window.Title.Font = theme.font
         window.Title.TextColor3 = theme.toptextcolor
-        window.Title.TextSize = theme.titlesize
-    end)
-
-    -- Minimize Button
-    local minimizeButton = Instance.new("TextButt
+        window.Title.TextSiz
 (Content truncated due to size limit. Use line ranges to read remaining content)
