@@ -1,3 +1,4 @@
+-- By EchoLabs
 local library = { 
 	flags = { }, 
 	items = { } 
@@ -453,6 +454,108 @@ function library:CreateWindow(name, size, hidebutton)
         tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(180, 180, 180)}):Play()
     end)
 
+    -- ============================================================
+    -- RESIZE HANDLE (triangle bas droite)
+    -- ============================================================
+    local minWidth, minHeight = 300, 200
+    local resizing = false
+    local resizeStart = nil
+    local resizeStartSize = nil
+
+    window.ResizeHandle = Instance.new("TextButton", window.Frame)
+    window.ResizeHandle.Name = "ResizeHandle"
+    window.ResizeHandle.Text = ""
+    window.ResizeHandle.BackgroundTransparency = 1
+    window.ResizeHandle.BorderSizePixel = 0
+    window.ResizeHandle.Size = UDim2.fromOffset(16, 16)
+    window.ResizeHandle.Position = UDim2.new(1, -16, 1, -16)
+    window.ResizeHandle.ZIndex = 20
+    window.ResizeHandle.AutoButtonColor = false
+
+    window.ResizeTriangle = Instance.new("Frame", window.ResizeHandle)
+    window.ResizeTriangle.Name = "triangle"
+    window.ResizeTriangle.BackgroundTransparency = 1
+    window.ResizeTriangle.BorderSizePixel = 0
+    window.ResizeTriangle.Size = UDim2.fromScale(1, 1)
+    window.ResizeTriangle.ZIndex = 21
+
+    for i = 1, 3 do
+        local line = Instance.new("Frame", window.ResizeTriangle)
+        line.BorderSizePixel = 0
+        line.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+        line.ZIndex = 21
+        local offset = (i - 1) * 4
+        line.Size = UDim2.fromOffset(13 - offset, 1)
+        line.Position = UDim2.fromOffset(offset + 1, 3 + offset * 1.5)
+        line.Rotation = -45
+        updateevent.Event:Connect(function(theme)
+            line.BackgroundColor3 = theme.outlinecolor
+        end)
+    end
+
+    window.ResizeHandle.MouseEnter:Connect(function()
+        for _, line in pairs(window.ResizeTriangle:GetChildren()) do
+            tweenservice:Create(line, TweenInfo.new(0.1), {BackgroundColor3 = window.theme.accentcolor}):Play()
+        end
+    end)
+    window.ResizeHandle.MouseLeave:Connect(function()
+        if not resizing then
+            for _, line in pairs(window.ResizeTriangle:GetChildren()) do
+                tweenservice:Create(line, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(120, 120, 120)}):Play()
+            end
+        end
+    end)
+
+    window.ResizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = true
+            resizeStart = Vector2.new(input.Position.X, input.Position.Y)
+            resizeStartSize = Vector2.new(window.Frame.AbsoluteSize.X, window.Frame.AbsoluteSize.Y)
+        end
+    end)
+
+    uis.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if resizing then
+                resizing = false
+                for _, line in pairs(window.ResizeTriangle:GetChildren()) do
+                    tweenservice:Create(line, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(120, 120, 120)}):Play()
+                end
+            end
+        end
+    end)
+
+    uis.InputChanged:Connect(function(input)
+        if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = Vector2.new(input.Position.X - resizeStart.X, input.Position.Y - resizeStart.Y)
+            local newW = math.max(minWidth, resizeStartSize.X + delta.X)
+            local newH = math.max(minHeight, resizeStartSize.Y + delta.Y)
+            window.size = UDim2.fromOffset(newW, newH)
+            window.Frame.Size = window.size
+
+            window.BlackOutline.Size = window.size + UDim2.fromOffset(2, 2)
+            window.Outline.Size = window.size + UDim2.fromOffset(4, 4)
+            window.BlackOutline2.Size = window.size + UDim2.fromOffset(6, 6)
+            window.TopBar.Size = UDim2.fromOffset(newW, window.theme.topheight)
+            window.Line2.Size = UDim2.fromOffset(newW, 1)
+            window.TabList.Size = UDim2.fromOffset(newW, window.TopBar.AbsoluteSize.Y / 2)
+            window.BlackLine.Size = UDim2.fromOffset(newW, 1)
+            window.BackgroundImage.Size = UDim2.fromOffset(newW, newH - window.TopBar.AbsoluteSize.Y - 1)
+
+            for _, tab in pairs(window.Tabs) do
+                tab.Left.Size = UDim2.fromOffset(newW / 2, newH - (window.TopBar.AbsoluteSize.Y + 1))
+                tab.Right.Size = UDim2.fromOffset(newW / 2, newH - (window.TopBar.AbsoluteSize.Y + 1))
+                tab.Right.Position = tab.Left.Position + UDim2.fromOffset(newW / 2, 0)
+                for _, sector in pairs(tab.SectorsLeft) do
+                    sector.Main.Size = UDim2.fromOffset(newW / 2 - 17, sector.ListLayout.AbsoluteContentSize.Y + 22)
+                end
+                for _, sector in pairs(tab.SectorsRight) do
+                    sector.Main.Size = UDim2.fromOffset(newW / 2 - 17, sector.ListLayout.AbsoluteContentSize.Y + 22)
+                end
+            end
+        end
+    end)
+
     window.OpenedColorPickers = { }
     window.Tabs = { }
 
@@ -687,6 +790,87 @@ function library:CreateWindow(name, size, hidebutton)
                 tab.Right.CanvasSize = UDim2.fromOffset(tab.Right.AbsoluteSize.X, sizeright + ((#tab.SectorsRight - 1) * tab.RightListPadding.PaddingTop.Offset) + 20)
             end
 
+            -- ============================================================
+            -- AddLabel AMELIORE
+            -- ============================================================
+            function sector:AddLabel(text, color, centered)
+                local label = { }
+                label._color = color  -- stocker la couleur custom
+
+                -- Frame conteneur
+                label.Main = Instance.new("Frame", sector.Items)
+                label.Main.Name = "LabelFrame"
+                label.Main.BackgroundTransparency = 1
+                label.Main.BorderSizePixel = 0
+                label.Main.ZIndex = 4
+                label.Main.Size = UDim2.fromOffset(sector.Main.Size.X.Offset - 12, 16)
+
+                -- Barre accent verticale gauche
+                label.AccentBar = Instance.new("Frame", label.Main)
+                label.AccentBar.Name = "AccentBar"
+                label.AccentBar.ZIndex = 5
+                label.AccentBar.BorderSizePixel = 0
+                label.AccentBar.BackgroundColor3 = window.theme.accentcolor
+                label.AccentBar.Size = UDim2.fromOffset(2, 16)
+                label.AccentBar.Position = UDim2.fromOffset(0, 0)
+                updateevent.Event:Connect(function(theme)
+                    label.AccentBar.BackgroundColor3 = theme.accentcolor
+                end)
+
+                -- TextLabel
+                label.Text = Instance.new("TextLabel", label.Main)
+                label.Text.Name = "LabelText"
+                label.Text.BackgroundTransparency = 1
+                label.Text.Position = UDim2.fromOffset(8, 0)
+                label.Text.Size = UDim2.fromOffset(sector.Main.Size.X.Offset - 20, 16)
+                label.Text.ZIndex = 5
+                label.Text.Font = window.theme.font
+                label.Text.Text = text or ""
+                label.Text.TextColor3 = label._color or window.theme.itemscolor
+                label.Text.TextSize = 15
+                label.Text.TextStrokeTransparency = 1
+                label.Text.TextWrapped = true
+                label.Text.AutomaticSize = Enum.AutomaticSize.Y
+                label.Text.TextXAlignment = centered and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left
+                updateevent.Event:Connect(function(theme)
+                    label.Text.Font = theme.font
+                    if not label._color then
+                        label.Text.TextColor3 = theme.itemscolor
+                    end
+                end)
+
+                -- :Set(text) — mettre à jour le texte
+                function label:Set(value)
+                    label.Text.Text = tostring(value)
+                    sector:FixSize()
+                end
+
+                -- :Get() — lire le texte actuel
+                function label:Get()
+                    return label.Text.Text
+                end
+
+                -- :SetColor(color) — changer la couleur du texte dynamiquement
+                function label:SetColor(newColor)
+                    label._color = newColor
+                    label.Text.TextColor3 = newColor
+                end
+
+                -- :SetAccentColor(color) — changer la couleur de la barre accent
+                function label:SetAccentColor(newColor)
+                    label.AccentBar.BackgroundColor3 = newColor
+                end
+
+                -- :SetVisible(bool) — afficher/cacher le label
+                function label:SetVisible(value)
+                    label.Main.Visible = value
+                    sector:FixSize()
+                end
+
+                sector:FixSize()
+                return label
+            end
+
             function sector:AddButton(text, callback)
                 local button = { }
                 button.text = text or ""
@@ -768,34 +952,6 @@ function library:CreateWindow(name, size, hidebutton)
 
                 sector:FixSize()
                 return button
-            end
-
-            function sector:AddLabel(text)
-                local label = { }
-
-                label.Main = Instance.new("TextLabel", sector.Items)
-                label.Main.Name = "Label"
-                label.Main.BackgroundTransparency = 1
-                label.Main.Position = UDim2.new(0, -1, 0, 0)
-                label.Main.ZIndex = 4
-                label.Main.AutomaticSize = Enum.AutomaticSize.XY
-                label.Main.Font = window.theme.font
-                label.Main.Text = text
-                label.Main.TextColor3 = window.theme.itemscolor
-                label.Main.TextSize = 15
-                label.Main.TextStrokeTransparency = 1
-                label.Main.TextXAlignment = Enum.TextXAlignment.Left
-                updateevent.Event:Connect(function(theme)
-                    label.Main.Font = theme.font
-                    label.Main.TextColor3 = theme.itemscolor
-                end)
-
-                function label:Set(value)
-                    label.Main.Text = value
-                end
-
-                sector:FixSize()
-                return label
             end
             
             function sector:AddToggle(text, default, callback, flag)
