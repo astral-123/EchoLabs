@@ -1,3 +1,4 @@
+-- By EchoLabs
 local library = { 
 	flags = { }, 
 	items = { } 
@@ -30,12 +31,11 @@ local shorter_keycodes = {
 }
 
 -- Boutons souris supportés
+-- MB4/MB5 n'existent pas dans l'API Roblox, on les ignore
 local mouse_buttons = {
 	[Enum.UserInputType.MouseButton1] = "MB1",
 	[Enum.UserInputType.MouseButton2] = "MB2",
 	[Enum.UserInputType.MouseButton3] = "MB3",
-	[Enum.UserInputType.MouseButton4] = "MB4",
-	[Enum.UserInputType.MouseButton5] = "MB5",
 }
 
 -- Convertit une valeur keybind en texte affiché
