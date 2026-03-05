@@ -46,3 +46,5 @@ AimingTab:CreateConfigSystem("right") --this is the config system
 local AimingSection = AimingTab:CreateSector("Discord", "right")
 
 AimingSection:AddLabel("Discord: .gg/ty9qwSr6Ya", Color3.fromRGB(180, 180, 180))
+
+Library:Notify('Rivals By EchoLabs', 'Script loaded successfully.', 8)
