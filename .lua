@@ -469,8 +469,29 @@ function library:CreateWindow(name, size, hidebutton)
 	window.CloseBtn.AutoButtonColor = false
 
 	window.CloseBtn.MouseButton1Down:Connect(function()
-		window.Main:Destroy()
-	end)
+    -- Stoppe tous les toggles/flags
+    for i, v in pairs(library.flags) do
+        library.flags[i] = nil
+    end
+    -- Désactive tous les items (toggles, etc.)
+    for i, v in pairs(library.items) do
+        pcall(function()
+            if v.Set then
+                if type(v.value) == "boolean" then
+                    v:Set(false)
+                end
+            end
+        end)
+    end
+    -- Detruit les autres GUI (watermark, notifs)
+    for _, gui in pairs(coregui:GetChildren()) do
+        if gui.Name == "Watermark" or gui.Name == "EchoNotif" then
+            gui:Destroy()
+        end
+    end
+    -- Detruit la fenetre principale
+    window.Main:Destroy()
+end)
 	window.CloseBtn.MouseEnter:Connect(function()
 		tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(220, 60, 60)}):Play()
 	end)
