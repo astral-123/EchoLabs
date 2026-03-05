@@ -468,28 +468,25 @@ function library:CreateWindow(name, size, hidebutton)
 	window.CloseBtn.ZIndex = 10
 	window.CloseBtn.AutoButtonColor = false
 
-	window.CloseBtn.MouseButton1Down:Connect(function()
-    -- Stoppe tous les toggles/flags
-    for i, v in pairs(library.flags) do
-        library.flags[i] = nil
-    end
-    -- Désactive tous les items (toggles, etc.)
+window.CloseBtn.MouseButton1Down:Connect(function()
+    -- 1. D'abord désactiver tous les toggles (déclenche les callbacks)
     for i, v in pairs(library.items) do
         pcall(function()
-            if v.Set then
-                if type(v.value) == "boolean" then
-                    v:Set(false)
-                end
+            if v.Set and type(v.value) == "boolean" and v.value == true then
+                v:Set(false)
             end
         end)
     end
-    -- Detruit les autres GUI (watermark, notifs)
+    -- 2. Ensuite vider les flags
+    for i, v in pairs(library.flags) do
+        library.flags[i] = nil
+    end
+    -- 3. Détruire les GUIs
     for _, gui in pairs(coregui:GetChildren()) do
         if gui.Name == "Watermark" or gui.Name == "EchoNotif" then
             gui:Destroy()
         end
     end
-    -- Detruit la fenetre principale
     window.Main:Destroy()
 end)
 	window.CloseBtn.MouseEnter:Connect(function()
