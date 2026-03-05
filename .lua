@@ -469,7 +469,7 @@ function library:CreateWindow(name, size, hidebutton)
 	window.CloseBtn.AutoButtonColor = false
 
 window.CloseBtn.MouseButton1Down:Connect(function()
-    -- 1. D'abord désactiver tous les toggles (déclenche les callbacks)
+    -- Désactiver tous les toggles (déclenche les callbacks avec false)
     for i, v in pairs(library.items) do
         pcall(function()
             if v.Set and type(v.value) == "boolean" and v.value == true then
@@ -477,17 +477,37 @@ window.CloseBtn.MouseButton1Down:Connect(function()
             end
         end)
     end
-    -- 2. Ensuite vider les flags
+    
+    -- Vider tous les flags
     for i, v in pairs(library.flags) do
         library.flags[i] = nil
     end
-    -- 3. Détruire les GUIs
+    
+    -- Désactiver tous les dropdowns ouverts
+    for i, v in pairs(window.OpenedColorPickers) do
+        if v then
+            i.Visible = false
+            window.OpenedColorPickers[i] = false
+        end
+    end
+    
+    -- Détruire tous les GUIs associés
     for _, gui in pairs(coregui:GetChildren()) do
-        if gui.Name == "Watermark" or gui.Name == "EchoNotif" then
+        if gui.Name == "Watermark" or gui.Name == "EchoNotif" or gui.Name == window.name then
             gui:Destroy()
         end
     end
+    
+    -- Détruire la fenêtre principale
     window.Main:Destroy()
+    
+    -- Nettoyer les références globales
+    if getgenv().uilib == window.Main then
+        getgenv().uilib = nil
+    end
+    if getgenv().watermark then
+        getgenv().watermark = nil
+    end
 end)
 	window.CloseBtn.MouseEnter:Connect(function()
 		tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(220, 60, 60)}):Play()
