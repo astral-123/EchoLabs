@@ -3063,4 +3063,149 @@ function library:CreateWindow(name, size, hidebutton)
 	return window
 end
 
+-- ================================================================
+-- NOTIFY SYSTEM
+-- ================================================================
+function library:Notify(title, description, duration)
+    -- Support ancien format: Notify(text, duration)
+    if type(description) == "number" then
+        duration = description
+        description = nil
+    end
+    duration = duration or 5
+
+    local notifGui = Instance.new("ScreenGui", coregui)
+    notifGui.Name = "EchoNotif"
+    notifGui.DisplayOrder = 20
+    if syn then pcall(function() syn.protect_gui(notifGui) end) end
+
+    -- Container principal
+    local notifFrame = Instance.new("Frame", notifGui)
+    notifFrame.Name = "NotifFrame"
+    notifFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    notifFrame.BorderSizePixel = 0
+    notifFrame.Size = UDim2.fromOffset(260, description and 56 or 36)
+    notifFrame.Position = UDim2.new(1, 270, 0, 60)
+    notifFrame.ClipsDescendants = true
+
+    -- Outlines (triple border comme la lib)
+    local bo2 = Instance.new("Frame", notifFrame)
+    bo2.ZIndex = 0 ; bo2.BorderSizePixel = 0
+    bo2.BackgroundColor3 = library.theme.outlinecolor2
+    bo2.Size = notifFrame.Size + UDim2.fromOffset(4, 4)
+    bo2.Position = UDim2.fromOffset(-2, -2)
+
+    local bo1 = Instance.new("Frame", notifFrame)
+    bo1.ZIndex = -1 ; bo1.BorderSizePixel = 0
+    bo1.BackgroundColor3 = library.theme.outlinecolor
+    bo1.Size = notifFrame.Size + UDim2.fromOffset(6, 6)
+    bo1.Position = UDim2.fromOffset(-3, -3)
+
+    local bo0 = Instance.new("Frame", notifFrame)
+    bo0.ZIndex = -2 ; bo0.BorderSizePixel = 0
+    bo0.BackgroundColor3 = library.theme.outlinecolor2
+    bo0.Size = notifFrame.Size + UDim2.fromOffset(8, 8)
+    bo0.Position = UDim2.fromOffset(-4, -4)
+
+    -- Gradient fond
+    local gradient = Instance.new("UIGradient", notifFrame)
+    gradient.Rotation = 90
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(38, 38, 38)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(22, 22, 22))
+    })
+
+    -- Barre accent en haut
+    local topBar = Instance.new("Frame", notifFrame)
+    topBar.Name = "TopBar"
+    topBar.ZIndex = 4
+    topBar.BorderSizePixel = 0
+    topBar.BackgroundColor3 = library.theme.accentcolor
+    topBar.Size = UDim2.fromOffset(0, 2)
+    topBar.Position = UDim2.fromOffset(0, 0)
+
+    -- Barre accent gauche
+    local leftBar = Instance.new("Frame", notifFrame)
+    leftBar.Name = "LeftBar"
+    leftBar.ZIndex = 4
+    leftBar.BorderSizePixel = 0
+    leftBar.BackgroundColor3 = library.theme.accentcolor
+    leftBar.Size = UDim2.fromOffset(2, notifFrame.Size.Y.Offset)
+    leftBar.Position = UDim2.fromOffset(0, 0)
+
+    -- Titre
+    local titleLabel = Instance.new("TextLabel", notifFrame)
+    titleLabel.Name = "Title"
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.ZIndex = 5
+    titleLabel.Font = library.theme.font
+    titleLabel.Text = title or ""
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.TextSize = 14
+    titleLabel.TextStrokeTransparency = 1
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Position = UDim2.fromOffset(10, description and 6 or 10)
+    titleLabel.Size = UDim2.fromOffset(236, 16)
+
+    -- Description (optionnelle)
+    if description then
+        local descLabel = Instance.new("TextLabel", notifFrame)
+        descLabel.Name = "Description"
+        descLabel.BackgroundTransparency = 1
+        descLabel.ZIndex = 5
+        descLabel.Font = library.theme.font
+        descLabel.Text = description
+        descLabel.TextColor3 = library.theme.itemscolor
+        descLabel.TextSize = 12
+        descLabel.TextStrokeTransparency = 1
+        descLabel.TextXAlignment = Enum.TextXAlignment.Left
+        descLabel.TextWrapped = true
+        descLabel.Position = UDim2.fromOffset(10, 25)
+        descLabel.Size = UDim2.fromOffset(236, 24)
+    end
+
+    -- Barre de progression en bas
+    local progressBg = Instance.new("Frame", notifFrame)
+    progressBg.Name = "ProgressBg"
+    progressBg.ZIndex = 4
+    progressBg.BorderSizePixel = 0
+    progressBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    progressBg.Size = UDim2.fromOffset(260, 2)
+    progressBg.Position = UDim2.new(0, 0, 1, -2)
+
+    local progressBar = Instance.new("Frame", progressBg)
+    progressBar.Name = "Progress"
+    progressBar.ZIndex = 5
+    progressBar.BorderSizePixel = 0
+    progressBar.BackgroundColor3 = library.theme.accentcolor
+    progressBar.Size = UDim2.fromScale(1, 1)
+    progressBar.Position = UDim2.fromOffset(0, 0)
+
+    -- Animation entrée (slide depuis la gauche)
+	tweenservice:Create(notifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+    	Position = UDim2.new(1, -272, 0, 60)
+	}):Play()
+
+    -- Animation topbar
+    tweenservice:Create(topBar, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Size = UDim2.fromOffset(260, 2)
+    }):Play()
+
+    -- Animation barre de progression (durée totale)
+    wait(0.35)
+    tweenservice:Create(progressBar, TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+        Size = UDim2.fromScale(0, 1)
+    }):Play()
+
+    -- Animation sortie après durée
+    delay(duration, function()
+		tweenservice:Create(notifFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+    		Position = UDim2.new(1, 270, 0, 60)
+		}):Play()
+        wait(0.3)
+        notifGui:Destroy()
+    end)
+
+    return notifFrame
+end
 return library
