@@ -469,7 +469,7 @@ function library:CreateWindow(name, size, hidebutton)
 	window.CloseBtn.AutoButtonColor = false
 
 window.CloseBtn.MouseButton1Down:Connect(function()
-    -- Désactiver tous les toggles (déclenche les callbacks avec false)
+    -- 1. D'abord désactiver tous les toggles (déclenche les callbacks)
     for i, v in pairs(library.items) do
         pcall(function()
             if v.Set and type(v.value) == "boolean" and v.value == true then
@@ -478,36 +478,47 @@ window.CloseBtn.MouseButton1Down:Connect(function()
         end)
     end
     
-    -- Vider tous les flags
+    -- 2. Ensuite vider les flags
     for i, v in pairs(library.flags) do
         library.flags[i] = nil
     end
     
-    -- Désactiver tous les dropdowns ouverts
+    -- 3. Fermer tous les colorpickers ouverts
     for i, v in pairs(window.OpenedColorPickers) do
         if v then
-            i.Visible = false
-            window.OpenedColorPickers[i] = false
+            pcall(function()
+                i.Visible = false
+                window.OpenedColorPickers[i] = false
+            end)
         end
     end
     
-    -- Détruire tous les GUIs associés
+    -- 4. Chercher et détruire tous les Drawings (FOV circles, etc.)
+    pcall(function()
+        -- Essayer de trouver et détruire tous les objets Drawing
+        local drawings = getgenv and getgenv()._G and getgenv()._G.EL
+        if drawings then
+            if drawings.SharedFov then drawings.SharedFov.Enabled = false end
+            if drawings.styledFovMouse then pcall(function() drawings.styledFovMouse:setVisible(false) end) end
+            if drawings.newSilentAim and drawings.newSilentAim.fovCircle then
+                pcall(function() drawings.newSilentAim.fovCircle:setVisible(false) end)
+            end
+        end
+        
+        -- Détruire toutes les lignes de drag
+        if _G.EL and _G.EL.dragLine then
+            _G.EL.dragLine.Visible = false
+        end
+    end)
+    
+    -- 5. Détruire les GUIs
     for _, gui in pairs(coregui:GetChildren()) do
-        if gui.Name == "Watermark" or gui.Name == "EchoNotif" or gui.Name == window.name then
+        if gui.Name == "Watermark" or gui.Name == "EchoNotif" then
             gui:Destroy()
         end
     end
     
-    -- Détruire la fenêtre principale
     window.Main:Destroy()
-    
-    -- Nettoyer les références globales
-    if getgenv().uilib == window.Main then
-        getgenv().uilib = nil
-    end
-    if getgenv().watermark then
-        getgenv().watermark = nil
-    end
 end)
 	window.CloseBtn.MouseEnter:Connect(function()
 		tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(220, 60, 60)}):Play()
