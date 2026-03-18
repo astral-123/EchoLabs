@@ -31,7 +31,6 @@ local shorter_keycodes = {
 }
 
 -- Boutons souris supportés
--- MB4/MB5 n'existent pas dans l'API Roblox, on les ignore
 local mouse_buttons = {
 	[Enum.UserInputType.MouseButton1] = "MB1",
 	[Enum.UserInputType.MouseButton2] = "MB2",
@@ -55,11 +54,9 @@ end
 -- Vérifie si un input correspond à une valeur keybind stockée
 local function inputMatchesKeybind(input, value)
 	if value == "None" or value == nil then return false end
-	-- Bouton souris
 	if mouse_buttons[value] then
 		return input.UserInputType == value
 	end
-	-- Touche clavier
 	if typeof(value) == "EnumItem" then
 		return input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == value
 	end
@@ -237,7 +234,12 @@ function library:CreateWatermark(name, position)
 	return watermark
 end
 
-function library:CreateWindow(name, size, hidebutton)
+function library:CreateWindow(name, size, hidebutton, keySystem)
+	-- keySystem peut être :
+	-- false : pas de key system (comportement par défaut)
+	-- true : key system avec titre/description par défaut
+	-- table : configuration personnalisée { title = "Titre", description = "Description", checkCallback = function(key) return true/false end, getKeyLink = "https://lien.com" }
+	
 	local window = { }
 
 	window.name      = name or ""
@@ -245,6 +247,26 @@ function library:CreateWindow(name, size, hidebutton)
 	window.hidebutton = hidebutton or Enum.KeyCode.RightShift
 	window.hidekey   = window.hidebutton
 	window.theme     = library.theme
+	window.keySystem = keySystem or false
+
+	-- Configuration par défaut du key system
+	local keyConfig = {
+		title = "Key System",
+		description = "Veuillez entrer votre clé d'accès",
+		checkCallback = function(key)
+			-- Par défaut, accepte "admin" ou "testkey"
+			return key == "admin" or key == "testkey"
+		end,
+		getKeyLink = nil -- si nil, pas de bouton "Get Key"
+	}
+	
+	if type(window.keySystem) == "table" then
+		-- Fusion avec la config personnalisée
+		for k, v in pairs(window.keySystem) do
+			keyConfig[k] = v
+		end
+		window.keySystem = true
+	end
 
 	local updateevent = Instance.new("BindableEvent")
 	function window:UpdateTheme(theme)
@@ -287,6 +309,268 @@ function library:CreateWindow(name, size, hidebutton)
 		end
 	end
 
+	-- ============================================================
+	-- KEY SYSTEM GUI
+	-- ============================================================
+	if window.keySystem then
+		local keyGui = Instance.new("Frame", window.Main)
+		keyGui.Name = "KeySystem"
+		keyGui.BackgroundColor3 = window.theme.backgroundcolor
+		keyGui.BorderSizePixel = 0
+		keyGui.Size = UDim2.fromOffset(300, 180)
+		keyGui.Position = UDim2.fromScale(0.5, 0.5)
+		keyGui.AnchorPoint = Vector2.new(0.5, 0.5)
+		keyGui.ZIndex = 100
+		keyGui.Visible = true
+
+		-- Outlines (style de la lib)
+		local keyBlackOutline2 = Instance.new("Frame", keyGui)
+		keyBlackOutline2.Name = "outline" ; keyBlackOutline2.ZIndex = 99
+		keyBlackOutline2.Size = keyGui.Size + UDim2.fromOffset(6, 6)
+		keyBlackOutline2.BorderSizePixel = 0
+		keyBlackOutline2.BackgroundColor3 = window.theme.outlinecolor2
+		keyBlackOutline2.Position = UDim2.fromOffset(-3, -3)
+
+		local keyOutline = Instance.new("Frame", keyGui)
+		keyOutline.Name = "outline" ; keyOutline.ZIndex = 98
+		keyOutline.Size = keyGui.Size + UDim2.fromOffset(4, 4)
+		keyOutline.BorderSizePixel = 0
+		keyOutline.BackgroundColor3 = window.theme.outlinecolor
+		keyOutline.Position = UDim2.fromOffset(-2, -2)
+
+		local keyBlackOutline = Instance.new("Frame", keyGui)
+		keyBlackOutline.Name = "outline" ; keyBlackOutline.ZIndex = 97
+		keyBlackOutline.Size = keyGui.Size + UDim2.fromOffset(2, 2)
+		keyBlackOutline.BorderSizePixel = 0
+		keyBlackOutline.BackgroundColor3 = window.theme.outlinecolor2
+		keyBlackOutline.Position = UDim2.fromOffset(-1, -1)
+
+		-- Top bar
+		local keyTopBar = Instance.new("Frame", keyGui)
+		keyTopBar.Name = "top"
+		keyTopBar.Size = UDim2.fromOffset(300, 30)
+		keyTopBar.BorderSizePixel = 0
+		keyTopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		keyTopBar.ZIndex = 100
+
+		local keyTopGradient = Instance.new("UIGradient", keyTopBar)
+		keyTopGradient.Rotation = 90
+		keyTopGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0.00, window.theme.topcolor), ColorSequenceKeypoint.new(1.00, window.theme.topcolor2) })
+
+		-- Titre du key system
+		local keyTitle = Instance.new("TextLabel", keyTopBar)
+		keyTitle.TextColor3 = window.theme.toptextcolor
+		keyTitle.Text = keyConfig.title
+		keyTitle.Font = window.theme.font
+		keyTitle.Name = "title"
+		keyTitle.Position = UDim2.fromOffset(8, 5)
+		keyTitle.BackgroundTransparency = 1
+		keyTitle.Size = UDim2.fromOffset(284, 20)
+		keyTitle.TextSize = 16
+		keyTitle.TextXAlignment = Enum.TextXAlignment.Left
+		keyTitle.ZIndex = 101
+
+		-- Ligne sous le top bar
+		local keyLine = Instance.new("Frame", keyGui)
+		keyLine.Name = "line"
+		keyLine.Position = UDim2.fromOffset(0, 30)
+		keyLine.Size = UDim2.fromOffset(300, 1)
+		keyLine.BorderSizePixel = 0
+		keyLine.BackgroundColor3 = window.theme.accentcolor
+		keyLine.ZIndex = 100
+
+		-- Description
+		local keyDesc = Instance.new("TextLabel", keyGui)
+		keyDesc.TextColor3 = window.theme.itemscolor
+		keyDesc.Text = keyConfig.description
+		keyDesc.Font = window.theme.font
+		keyDesc.Name = "description"
+		keyDesc.Position = UDim2.fromOffset(10, 40)
+		keyDesc.BackgroundTransparency = 1
+		keyDesc.Size = UDim2.fromOffset(280, 30)
+		keyDesc.TextSize = 13
+		keyDesc.TextWrapped = true
+		keyDesc.TextXAlignment = Enum.TextXAlignment.Left
+		keyDesc.ZIndex = 101
+
+		-- Input pour la key
+		local keyInput = Instance.new("TextBox", keyGui)
+		keyInput.Name = "keyinput"
+		keyInput.PlaceholderText = "Entrez votre clé..."
+		keyInput.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+		keyInput.Text = ""
+		keyInput.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		keyInput.Font = window.theme.font
+		keyInput.MultiLine = false
+		keyInput.ClearTextOnFocus = false
+		keyInput.ZIndex = 101
+		keyInput.TextSize = 14
+		keyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+		keyInput.BorderSizePixel = 0
+		keyInput.Position = UDim2.fromOffset(10, 80)
+		keyInput.Size = UDim2.fromOffset(280, 25)
+
+		-- Gradient pour l'input
+		local inputGradient = Instance.new("UIGradient", keyInput)
+		inputGradient.Rotation = 90
+		inputGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0.00, Color3.fromRGB(49,49,49)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(39,39,39)) })
+
+		-- Outlines pour l'input
+		local inputBlackOutline2 = Instance.new("Frame", keyInput)
+		inputBlackOutline2.Name = "blackline" ; inputBlackOutline2.ZIndex = 100
+		inputBlackOutline2.Size = keyInput.Size + UDim2.fromOffset(6, 6)
+		inputBlackOutline2.BorderSizePixel = 0
+		inputBlackOutline2.BackgroundColor3 = window.theme.outlinecolor2
+		inputBlackOutline2.Position = UDim2.fromOffset(-3, -3)
+
+		local inputOutline = Instance.new("Frame", keyInput)
+		inputOutline.Name = "blackline" ; inputOutline.ZIndex = 100
+		inputOutline.Size = keyInput.Size + UDim2.fromOffset(4, 4)
+		inputOutline.BorderSizePixel = 0
+		inputOutline.BackgroundColor3 = window.theme.outlinecolor
+		inputOutline.Position = UDim2.fromOffset(-2, -2)
+
+		local inputBlackOutline = Instance.new("Frame", keyInput)
+		inputBlackOutline.Name = "blackline" ; inputBlackOutline.ZIndex = 100
+		inputBlackOutline.Size = keyInput.Size + UDim2.fromOffset(2, 2)
+		inputBlackOutline.BorderSizePixel = 0
+		inputBlackOutline.BackgroundColor3 = window.theme.outlinecolor2
+		inputBlackOutline.Position = UDim2.fromOffset(-1, -1)
+
+		-- Frame pour les boutons
+		local buttonFrame = Instance.new("Frame", keyGui)
+		buttonFrame.Name = "buttons"
+		buttonFrame.BackgroundTransparency = 1
+		buttonFrame.Position = UDim2.fromOffset(10, 120)
+		buttonFrame.Size = UDim2.fromOffset(280, 40)
+		buttonFrame.ZIndex = 101
+
+		-- Bouton Check Key
+		local checkButton = Instance.new("TextButton", buttonFrame)
+		checkButton.Name = "check"
+		checkButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		checkButton.BorderSizePixel = 0
+		checkButton.Size = keyConfig.getKeyLink and UDim2.fromOffset(135, 30) or UDim2.fromOffset(280, 30)
+		checkButton.Position = UDim2.fromOffset(0, 0)
+		checkButton.ZIndex = 102
+		checkButton.AutoButtonColor = false
+		checkButton.Font = window.theme.font
+		checkButton.Text = "Check Key"
+		checkButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+		checkButton.TextSize = 14
+
+		local checkGradient = Instance.new("UIGradient", checkButton)
+		checkGradient.Rotation = 90
+		checkGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0.00, window.theme.accentcolor2), ColorSequenceKeypoint.new(1.00, window.theme.accentcolor) })
+
+		local checkBlackOutline2 = Instance.new("Frame", checkButton)
+		checkBlackOutline2.Name = "blackline" ; checkBlackOutline2.ZIndex = 101
+		checkBlackOutline2.Size = checkButton.Size + UDim2.fromOffset(6, 6)
+		checkBlackOutline2.BorderSizePixel = 0
+		checkBlackOutline2.BackgroundColor3 = window.theme.outlinecolor2
+		checkBlackOutline2.Position = UDim2.fromOffset(-3, -3)
+
+		-- Bouton Get Key (optionnel)
+		local getButton = nil
+		if keyConfig.getKeyLink then
+			getButton = Instance.new("TextButton", buttonFrame)
+			getButton.Name = "get"
+			getButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			getButton.BorderSizePixel = 0
+			getButton.Size = UDim2.fromOffset(135, 30)
+			getButton.Position = UDim2.fromOffset(145, 0)
+			getButton.ZIndex = 102
+			getButton.AutoButtonColor = false
+			getButton.Font = window.theme.font
+			getButton.Text = "Get Key"
+			getButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+			getButton.TextSize = 14
+
+			local getGradient = Instance.new("UIGradient", getButton)
+			getGradient.Rotation = 90
+			getGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0.00, Color3.fromRGB(49,49,49)), ColorSequenceKeypoint.new(1.00, Color3.fromRGB(39,39,39)) })
+
+			local getBlackOutline2 = Instance.new("Frame", getButton)
+			getBlackOutline2.Name = "blackline" ; getBlackOutline2.ZIndex = 101
+			getBlackOutline2.Size = getButton.Size + UDim2.fromOffset(6, 6)
+			getBlackOutline2.BorderSizePixel = 0
+			getBlackOutline2.BackgroundColor3 = window.theme.outlinecolor2
+			getBlackOutline2.Position = UDim2.fromOffset(-3, -3)
+
+			getButton.MouseButton1Down:Connect(function()
+				-- Ouvrir le lien dans le navigateur
+				setclipboard and setclipboard(keyConfig.getKeyLink)
+				library:Notify("Key System", "Lien copié dans le presse-papier !", 3)
+			end)
+
+			getButton.MouseEnter:Connect(function()
+				getBlackOutline2.BackgroundColor3 = window.theme.accentcolor
+			end)
+			getButton.MouseLeave:Connect(function()
+				getBlackOutline2.BackgroundColor3 = window.theme.outlinecolor2
+			end)
+		end
+
+		-- Message d'erreur
+		local errorMsg = Instance.new("TextLabel", keyGui)
+		errorMsg.TextColor3 = Color3.fromRGB(255, 80, 80)
+		errorMsg.Text = ""
+		errorMsg.Font = window.theme.font
+		errorMsg.Name = "error"
+		errorMsg.Position = UDim2.fromOffset(10, 165)
+		errorMsg.BackgroundTransparency = 1
+		errorMsg.Size = UDim2.fromOffset(280, 15)
+		errorMsg.TextSize = 12
+		errorMsg.TextXAlignment = Enum.TextXAlignment.Center
+		errorMsg.ZIndex = 101
+		errorMsg.Visible = false
+
+		-- Fonctions pour le key system
+		local function checkKey()
+			local key = keyInput.Text
+			if key and key ~= "" then
+				local success, result = pcall(keyConfig.checkCallback, key)
+				if success and result then
+					-- Key valide
+					keyGui.Visible = false
+					window.Frame.Visible = true
+					library:Notify("Key System", "Clé acceptée !", 3)
+				else
+					-- Key invalide
+					errorMsg.Text = "Clé invalide !"
+					errorMsg.Visible = true
+					keyInput.Text = ""
+					wait(2)
+					errorMsg.Visible = false
+				end
+			else
+				errorMsg.Text = "Veuillez entrer une clé"
+				errorMsg.Visible = true
+				wait(1.5)
+				errorMsg.Visible = false
+			end
+		end
+
+		checkButton.MouseButton1Down:Connect(checkKey)
+		keyInput.FocusLost:Connect(function(enterPressed)
+			if enterPressed then
+				checkKey()
+			end
+		end)
+
+		checkButton.MouseEnter:Connect(function()
+			checkBlackOutline2.BackgroundColor3 = window.theme.accentcolor
+		end)
+		checkButton.MouseLeave:Connect(function()
+			checkBlackOutline2.BackgroundColor3 = window.theme.outlinecolor2
+		end)
+
+		-- Cacher la fenêtre principale initialement
+		window.FrameVisible = false
+	else
+		window.FrameVisible = true
+	end
+
 	window.Frame = Instance.new("TextButton", window.Main)
 	window.Frame.Name = "main"
 	window.Frame.Position = UDim2.fromScale(0.5, 0.5)
@@ -296,6 +580,7 @@ function library:CreateWindow(name, size, hidebutton)
 	window.Frame.Text = ""
 	window.Frame.BackgroundColor3 = window.theme.backgroundcolor
 	window.Frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	window.Frame.Visible = window.FrameVisible
 	updateevent.Event:Connect(function(theme)
 		window.Frame.BackgroundColor3 = theme.backgroundcolor
 	end)
@@ -468,9 +753,58 @@ function library:CreateWindow(name, size, hidebutton)
 	window.CloseBtn.ZIndex = 10
 	window.CloseBtn.AutoButtonColor = false
 
-	window.CloseBtn.MouseButton1Down:Connect(function()
-		window.Main:Destroy()
-	end)
+window.CloseBtn.MouseButton1Down:Connect(function()
+    -- 1. D'abord désactiver tous les toggles (déclenche les callbacks)
+    for i, v in pairs(library.items) do
+        pcall(function()
+            if v.Set and type(v.value) == "boolean" and v.value == true then
+                v:Set(false)
+            end
+        end)
+    end
+    
+    -- 2. Ensuite vider les flags
+    for i, v in pairs(library.flags) do
+        library.flags[i] = nil
+    end
+    
+    -- 3. Fermer tous les colorpickers ouverts
+    for i, v in pairs(window.OpenedColorPickers) do
+        if v then
+            pcall(function()
+                i.Visible = false
+                window.OpenedColorPickers[i] = false
+            end)
+        end
+    end
+    
+    -- 4. Chercher et détruire tous les Drawings (FOV circles, etc.)
+    pcall(function()
+        -- Essayer de trouver et détruire tous les objets Drawing
+        local drawings = getgenv and getgenv()._G and getgenv()._G.EL
+        if drawings then
+            if drawings.SharedFov then drawings.SharedFov.Enabled = false end
+            if drawings.styledFovMouse then pcall(function() drawings.styledFovMouse:setVisible(false) end) end
+            if drawings.newSilentAim and drawings.newSilentAim.fovCircle then
+                pcall(function() drawings.newSilentAim.fovCircle:setVisible(false) end)
+            end
+        end
+        
+        -- Détruire toutes les lignes de drag
+        if _G.EL and _G.EL.dragLine then
+            _G.EL.dragLine.Visible = false
+        end
+    end)
+    
+    -- 5. Détruire les GUIs
+    for _, gui in pairs(coregui:GetChildren()) do
+        if gui.Name == "Watermark" or gui.Name == "EchoNotif" then
+            gui:Destroy()
+        end
+    end
+    
+    window.Main:Destroy()
+end)
 	window.CloseBtn.MouseEnter:Connect(function()
 		tweenservice:Create(window.CloseBtn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(220, 60, 60)}):Play()
 	end)
@@ -3085,7 +3419,7 @@ function library:Notify(title, description, duration)
     notifFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     notifFrame.BorderSizePixel = 0
     notifFrame.Size = UDim2.fromOffset(260, description and 56 or 36)
-    notifFrame.Position = UDim2.new(0, -270, 0, 60)
+    notifFrame.Position = UDim2.new(1, 270, 0, 60)
     notifFrame.ClipsDescendants = true
 
     -- Outlines (triple border comme la lib)
@@ -3182,9 +3516,9 @@ function library:Notify(title, description, duration)
     progressBar.Position = UDim2.fromOffset(0, 0)
 
     -- Animation entrée (slide depuis la gauche)
-    tweenservice:Create(notifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0, 12, 0, 60)
-    }):Play()
+	tweenservice:Create(notifFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+    	Position = UDim2.new(1, -272, 0, 60)
+	}):Play()
 
     -- Animation topbar
     tweenservice:Create(topBar, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
@@ -3199,9 +3533,9 @@ function library:Notify(title, description, duration)
 
     -- Animation sortie après durée
     delay(duration, function()
-        tweenservice:Create(notifFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
-            Position = UDim2.new(0, -270, 0, 60)
-        }):Play()
+		tweenservice:Create(notifFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {
+    		Position = UDim2.new(1, 270, 0, 60)
+		}):Play()
         wait(0.3)
         notifGui:Destroy()
     end)
