@@ -1,21 +1,22 @@
 --[[
-    MatchaLibrary_Ultimate.lua (V2 FIXED)
-    Design: Matcha (Exact Photo Style - Ultimate Version)
+    MatchaLibrary_Final.lua
+    Design: Matcha (Exact Photo Style - Final Version)
     Structure: EchoLabs (CreateWindow, CreateTab, CreateSector, etc.)
-    Features: Watermark (FPS/MS), Player List (TP/Spect), Options (Themes/Keybind)
+    Features: Watermark (FPS/MS), Player List (TP/Spect/SelectHighlight), Options (ColorPickers/RealKeybind), Real Dropdowns
 ]]
 
 local library = {
     flags = {},
     items = {},
     theme = {
-        background = Color3.fromRGB(10, 10, 12),
-        foreground = Color3.fromRGB(20, 20, 25),
+        background = Color3.fromRGB(15, 15, 18),
+        foreground = Color3.fromRGB(25, 25, 30),
         accent = Color3.fromRGB(255, 0, 150), -- Rose Matcha
         text = Color3.fromRGB(255, 255, 255),
         text_dark = Color3.fromRGB(150, 150, 160),
         font = Enum.Font.GothamBold,
-    }
+    },
+    open = true,
 }
 
 local uis = game:GetService("UserInputService")
@@ -31,12 +32,15 @@ function library:CreateWatermark()
     watermark.Name = "MatchaWatermark"
 
     local frame = Instance.new("Frame", watermark)
-    frame.Size = UDim2.new(0, 180, 0, 30)
-    frame.Position = UDim2.new(0, 10, 0, 10)
+    frame.Size = UDim2.new(0, 200, 0, 30)
+    frame.Position = UDim2.new(0, 15, 0, 15)
     frame.BackgroundColor3 = library.theme.background
     frame.BorderSizePixel = 0
     local corner = Instance.new("UICorner", frame)
     corner.CornerRadius = UDim.new(0, 4)
+    local stroke = Instance.new("UIStroke", frame)
+    stroke.Color = library.theme.foreground
+    stroke.Thickness = 1
 
     local label = Instance.new("TextLabel", frame)
     label.Size = UDim2.new(1, -10, 1, 0)
@@ -59,8 +63,9 @@ function library:CreateWindow(name, size, hidebutton)
     local window = {
         tabs = {},
         active_tab = nil,
-        hidebutton = hidebutton or Enum.KeyCode.V,
-        visible = true
+        hidebutton = hidebutton or Enum.KeyCode.Insert,
+        visible = true,
+        dragging = false,
     }
 
     -- GUI Principal
@@ -68,19 +73,48 @@ function library:CreateWindow(name, size, hidebutton)
     window.main.Name = name
 
     window.frame = Instance.new("Frame", window.main)
-    window.frame.Size = UDim2.fromOffset(650, 500)
-    window.frame.Position = UDim2.new(0.6, 0, 0.5, -250)
+    window.frame.Size = UDim2.fromOffset(700, 550) -- Plus grand comme demandé
+    window.frame.Position = UDim2.new(0.6, 0, 0.5, -275)
     window.frame.BackgroundColor3 = library.theme.background
     window.frame.BorderSizePixel = 0
     window.frame.Active = true
-    window.frame.Draggable = true
+    window.frame.ClipsDescendants = false
 
     local corner = Instance.new("UICorner", window.frame)
-    corner.CornerRadius = UDim.new(0, 6)
+    corner.CornerRadius = UDim.new(0, 8)
+    local stroke = Instance.new("UIStroke", window.frame)
+    stroke.Color = library.theme.foreground
+    stroke.Thickness = 1
+
+    -- Dragging Fix
+    local dragInput, dragStart, startPos
+    window.frame.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not window.is_interacting then
+            window.dragging = true
+            dragStart = input.Position
+            startPos = window.frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    window.dragging = false
+                end
+            end)
+        end
+    end)
+    window.frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    uis.InputChanged:Connect(function(input)
+        if input == dragInput and window.dragging then
+            local delta = input.Position - dragStart
+            window.frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 
     -- Header
     local header = Instance.new("Frame", window.frame)
-    header.Size = UDim2.new(1, -40, 0, 40)
+    header.Size = UDim2.new(1, -40, 0, 50)
     header.Position = UDim2.new(0, 20, 0, 10)
     header.BackgroundTransparency = 1
 
@@ -89,24 +123,24 @@ function library:CreateWindow(name, size, hidebutton)
     title.Text = "Matcha  Comfort  beta"
     title.TextColor3 = library.theme.accent
     title.Font = library.theme.font
-    title.TextSize = 16
+    title.TextSize = 18
     title.TextXAlignment = Enum.TextXAlignment.Left
     title.BackgroundTransparency = 1
 
-    -- Tabs Container
+    -- Tabs Container (Horizontal)
     window.tab_container = Instance.new("Frame", window.frame)
-    window.tab_container.Size = UDim2.new(1, -40, 0, 30)
-    window.tab_container.Position = UDim2.new(0, 20, 0, 50)
+    window.tab_container.Size = UDim2.new(1, -40, 0, 35)
+    window.tab_container.Position = UDim2.new(0, 20, 0, 60)
     window.tab_container.BackgroundTransparency = 1
 
     local tab_layout = Instance.new("UIListLayout", window.tab_container)
     tab_layout.FillDirection = Enum.FillDirection.Horizontal
-    tab_layout.Padding = UDim.new(0, 20)
+    tab_layout.Padding = UDim.new(0, 25)
 
     -- Content Frame
     window.content = Instance.new("Frame", window.frame)
-    window.content.Size = UDim2.new(1, -40, 1, -100)
-    window.content.Position = UDim2.new(0, 20, 0, 90)
+    window.content.Size = UDim2.new(1, -40, 1, -120)
+    window.content.Position = UDim2.new(0, 20, 0, 105)
     window.content.BackgroundTransparency = 1
 
     -- Toggle UI Visibility
@@ -123,12 +157,12 @@ function library:CreateWindow(name, size, hidebutton)
             frame = Instance.new("Frame", window.content)
         }
 
-        tab.button.Size = UDim2.new(0, 60, 1, 0)
+        tab.button.Size = UDim2.new(0, 80, 1, 0)
         tab.button.BackgroundTransparency = 1
         tab.button.Text = name
         tab.button.TextColor3 = library.theme.text_dark
         tab.button.Font = library.theme.font
-        tab.button.TextSize = 14
+        tab.button.TextSize = 15
         tab.button.BorderSizePixel = 0
 
         tab.frame.Size = UDim2.new(1, 0, 1, 0)
@@ -137,24 +171,24 @@ function library:CreateWindow(name, size, hidebutton)
 
         -- Columns
         local left_col = Instance.new("ScrollingFrame", tab.frame)
-        left_col.Size = UDim2.new(0.5, -10, 1, 0)
+        left_col.Size = UDim2.new(0.5, -15, 1, 0)
         left_col.BackgroundTransparency = 1
         left_col.ScrollBarThickness = 0
         left_col.CanvasSize = UDim2.new(0, 0, 0, 0)
         local l_layout = Instance.new("UIListLayout", left_col)
-        l_layout.Padding = UDim.new(0, 20)
+        l_layout.Padding = UDim.new(0, 25)
         l_layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             left_col.CanvasSize = UDim2.new(0, 0, 0, l_layout.AbsoluteContentSize.Y)
         end)
 
         local right_col = Instance.new("ScrollingFrame", tab.frame)
-        right_col.Size = UDim2.new(0.5, -10, 1, 0)
-        right_col.Position = UDim2.new(0.5, 10, 0, 0)
+        right_col.Size = UDim2.new(0.5, -15, 1, 0)
+        right_col.Position = UDim2.new(0.5, 15, 0, 0)
         right_col.BackgroundTransparency = 1
         right_col.ScrollBarThickness = 0
         right_col.CanvasSize = UDim2.new(0, 0, 0, 0)
         local r_layout = Instance.new("UIListLayout", right_col)
-        r_layout.Padding = UDim.new(0, 20)
+        r_layout.Padding = UDim.new(0, 25)
         r_layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             right_col.CanvasSize = UDim2.new(0, 0, 0, r_layout.AbsoluteContentSize.Y)
         end)
@@ -184,42 +218,41 @@ function library:CreateWindow(name, size, hidebutton)
             s_frame.BackgroundTransparency = 1
             
             local s_layout = Instance.new("UIListLayout", s_frame)
-            s_layout.Padding = UDim.new(0, 10)
+            s_layout.Padding = UDim.new(0, 12)
             s_layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 s_frame.Size = UDim2.new(1, 0, 0, s_layout.AbsoluteContentSize.Y)
             end)
 
             local s_title = Instance.new("TextLabel", s_frame)
-            s_title.Size = UDim2.new(1, 0, 0, 20)
+            s_title.Size = UDim2.new(1, 0, 0, 25)
             s_title.Text = name
             s_title.TextColor3 = library.theme.accent
             s_title.Font = library.theme.font
-            s_title.TextSize = 14
+            s_title.TextSize = 15
             s_title.TextXAlignment = Enum.TextXAlignment.Left
             s_title.BackgroundTransparency = 1
 
             function sector:AddToggle(text, default, callback)
                 local toggle = {value = default}
                 local btn = Instance.new("TextButton", s_frame)
-                btn.Size = UDim2.new(1, 0, 0, 20)
+                btn.Size = UDim2.new(1, 0, 0, 22)
                 btn.BackgroundTransparency = 1
                 btn.Text = ""
 
                 local box = Instance.new("Frame", btn)
-                box.Size = UDim2.fromOffset(16, 16)
-                box.Position = UDim2.new(0, 0, 0.5, -8)
+                box.Size = UDim2.fromOffset(18, 18)
+                box.Position = UDim2.new(0, 0, 0.5, -9)
                 box.BackgroundColor3 = library.theme.foreground
                 box.BorderSizePixel = 0
-                local b_corner = Instance.new("UICorner", box)
-                b_corner.CornerRadius = UDim.new(0, 4)
+                Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
 
                 local label = Instance.new("TextLabel", btn)
-                label.Size = UDim2.new(1, -25, 1, 0)
-                label.Position = UDim2.new(0, 25, 0, 0)
+                label.Size = UDim2.new(1, -30, 1, 0)
+                label.Position = UDim2.new(0, 30, 0, 0)
                 label.Text = text
                 label.TextColor3 = library.theme.text_dark
                 label.Font = library.theme.font
-                label.TextSize = 13
+                label.TextSize = 14
                 label.TextXAlignment = Enum.TextXAlignment.Left
                 label.BackgroundTransparency = 1
 
@@ -239,45 +272,44 @@ function library:CreateWindow(name, size, hidebutton)
 
             function sector:AddSlider(text, min, default, max, step, callback)
                 local container = Instance.new("Frame", s_frame)
-                container.Size = UDim2.new(1, 0, 0, 35)
+                container.Size = UDim2.new(1, 0, 0, 40)
                 container.BackgroundTransparency = 1
 
                 local label = Instance.new("TextLabel", container)
-                label.Size = UDim2.new(0.5, 0, 0, 15)
+                label.Size = UDim2.new(0.5, 0, 0, 18)
                 label.Text = text
                 label.TextColor3 = library.theme.text_dark
                 label.Font = library.theme.font
-                label.TextSize = 13
+                label.TextSize = 14
                 label.TextXAlignment = Enum.TextXAlignment.Left
                 label.BackgroundTransparency = 1
 
                 local val = Instance.new("TextLabel", container)
-                val.Size = UDim2.new(0.5, 0, 0, 15)
+                val.Size = UDim2.new(0.5, 0, 0, 18)
                 val.Position = UDim2.new(0.5, 0, 0, 0)
                 val.Text = tostring(default)
                 val.TextColor3 = library.theme.text
                 val.Font = library.theme.font
-                val.TextSize = 13
+                val.TextSize = 14
                 val.TextXAlignment = Enum.TextXAlignment.Right
                 val.BackgroundTransparency = 1
 
                 local bar = Instance.new("Frame", container)
-                bar.Size = UDim2.new(1, 0, 0, 4)
-                bar.Position = UDim2.new(0, 0, 0, 22)
+                bar.Size = UDim2.new(1, 0, 0, 6)
+                bar.Position = UDim2.new(0, 0, 0, 25)
                 bar.BackgroundColor3 = library.theme.foreground
                 bar.BorderSizePixel = 0
-                local bar_corner = Instance.new("UICorner", bar)
-                bar_corner.CornerRadius = UDim.new(0, 2)
+                Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 3)
 
                 local fill = Instance.new("Frame", bar)
                 fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
                 fill.BackgroundColor3 = library.theme.accent
                 fill.BorderSizePixel = 0
-                local fill_corner = Instance.new("UICorner", fill)
-                fill_corner.CornerRadius = UDim.new(0, 2)
+                Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 3)
 
                 bar.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        window.is_interacting = true
                         local connection
                         connection = uis.InputChanged:Connect(function(input)
                             if input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -293,6 +325,7 @@ function library:CreateWindow(name, size, hidebutton)
                         end)
                         uis.InputEnded:Connect(function(input)
                             if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                                window.is_interacting = false
                                 connection:Disconnect()
                             end
                         end)
@@ -301,29 +334,63 @@ function library:CreateWindow(name, size, hidebutton)
             end
 
             function sector:AddDropdown(text, options, default, callback)
-                local drop = Instance.new("TextButton", s_frame)
-                drop.Size = UDim2.new(1, 0, 0, 25)
+                local drop_container = Instance.new("Frame", s_frame)
+                drop_container.Size = UDim2.new(1, 0, 0, 30)
+                drop_container.BackgroundTransparency = 1
+
+                local drop = Instance.new("TextButton", drop_container)
+                drop.Size = UDim2.new(1, 0, 1, 0)
                 drop.BackgroundColor3 = library.theme.foreground
                 drop.Text = "  " .. text .. " : " .. (default or "None")
                 drop.TextColor3 = library.theme.text_dark
                 drop.Font = library.theme.font
-                drop.TextSize = 13
+                drop.TextSize = 14
                 drop.TextXAlignment = Enum.TextXAlignment.Left
-                local drop_corner = Instance.new("UICorner", drop)
-                drop_corner.CornerRadius = UDim.new(0, 4)
+                Instance.new("UICorner", drop).CornerRadius = UDim.new(0, 5)
+
+                local list = Instance.new("Frame", drop_container)
+                list.Size = UDim2.new(1, 0, 0, 0)
+                list.Position = UDim2.new(0, 0, 1, 5)
+                list.BackgroundColor3 = library.theme.foreground
+                list.Visible = false
+                list.ZIndex = 10
+                Instance.new("UICorner", list).CornerRadius = UDim.new(0, 5)
+                Instance.new("UIListLayout", list)
+
+                drop.MouseButton1Click:Connect(function()
+                    list.Visible = not list.Visible
+                    list.Size = list.Visible and UDim2.new(1, 0, 0, #options * 25) or UDim2.new(1, 0, 0, 0)
+                end)
+
+                for _, opt in pairs(options) do
+                    local opt_btn = Instance.new("TextButton", list)
+                    opt_btn.Size = UDim2.new(1, 0, 0, 25)
+                    opt_btn.BackgroundTransparency = 1
+                    opt_btn.Text = "  " .. opt
+                    opt_btn.TextColor3 = library.theme.text_dark
+                    opt_btn.Font = library.theme.font
+                    opt_btn.TextSize = 13
+                    opt_btn.TextXAlignment = Enum.TextXAlignment.Left
+                    opt_btn.ZIndex = 11
+
+                    opt_btn.MouseButton1Click:Connect(function()
+                        drop.Text = "  " .. text .. " : " .. opt
+                        list.Visible = false
+                        callback(opt)
+                    end)
+                end
             end
 
             function sector:AddButton(text, callback)
                 local btn = Instance.new("TextButton", s_frame)
-                btn.Size = UDim2.new(1, 0, 0, 25)
+                btn.Size = UDim2.new(1, 0, 0, 30)
                 btn.BackgroundColor3 = library.theme.foreground
                 btn.Text = text
                 btn.TextColor3 = library.theme.text
                 btn.Font = library.theme.font
-                btn.TextSize = 13
+                btn.TextSize = 14
                 btn.MouseButton1Click:Connect(callback)
-                local btn_corner = Instance.new("UICorner", btn)
-                btn_corner.CornerRadius = UDim.new(0, 4)
+                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
             end
 
             function sector:AddLabel(text, color)
@@ -332,9 +399,48 @@ function library:CreateWindow(name, size, hidebutton)
                 label.Text = text
                 label.TextColor3 = color or library.theme.text_dark
                 label.Font = library.theme.font
-                label.TextSize = 13
+                label.TextSize = 14
                 label.TextXAlignment = Enum.TextXAlignment.Left
                 label.BackgroundTransparency = 1
+            end
+
+            function sector:AddKeybind(text, default, callback)
+                local container = Instance.new("Frame", s_frame)
+                container.Size = UDim2.new(1, 0, 0, 25)
+                container.BackgroundTransparency = 1
+
+                local label = Instance.new("TextLabel", container)
+                label.Size = UDim2.new(0.6, 0, 1, 0)
+                label.Text = text
+                label.TextColor3 = library.theme.text_dark
+                label.Font = library.theme.font
+                label.TextSize = 14
+                label.TextXAlignment = Enum.TextXAlignment.Left
+                label.BackgroundTransparency = 1
+
+                local btn = Instance.new("TextButton", container)
+                btn.Size = UDim2.new(0.35, 0, 1, 0)
+                btn.Position = UDim2.new(0.65, 0, 0, 0)
+                btn.BackgroundColor3 = library.theme.foreground
+                btn.Text = default.Name
+                btn.TextColor3 = library.theme.text
+                btn.Font = library.theme.font
+                btn.TextSize = 13
+                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+
+                local listening = false
+                btn.MouseButton1Click:Connect(function()
+                    listening = true
+                    btn.Text = "..."
+                end)
+
+                uis.InputBegan:Connect(function(input)
+                    if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+                        listening = false
+                        btn.Text = input.KeyCode.Name
+                        callback(input.KeyCode)
+                    end
+                end)
             end
 
             return sector
@@ -350,45 +456,50 @@ function library:CreateWindow(name, size, hidebutton)
         local p_actions = p_tab:CreateSector("Actions", "right")
 
         local selected_player = nil
+        local player_buttons = {}
 
         local function refresh_list()
-            for _, child in pairs(p_list.container:GetChildren()) do
-                if child:IsA("TextButton") then child:Destroy() end
-            end
+            for _, btn in pairs(player_buttons) do btn:Destroy() end
+            player_buttons = {}
             for _, p in pairs(players:GetPlayers()) do
                 if p ~= players.LocalPlayer then
                     local p_btn = Instance.new("TextButton", p_list.container)
-                    p_btn.Size = UDim2.new(1, 0, 0, 25)
+                    p_btn.Size = UDim2.new(1, 0, 0, 30)
                     p_btn.BackgroundColor3 = library.theme.foreground
                     p_btn.Text = "  " .. p.Name
                     p_btn.TextColor3 = library.theme.text_dark
                     p_btn.Font = library.theme.font
-                    p_btn.TextSize = 13
+                    p_btn.TextSize = 14
                     p_btn.TextXAlignment = Enum.TextXAlignment.Left
-                    local p_corner = Instance.new("UICorner", p_btn)
-                    p_corner.CornerRadius = UDim.new(0, 4)
+                    Instance.new("UICorner", p_btn).CornerRadius = UDim.new(0, 5)
                     
                     p_btn.MouseButton1Click:Connect(function()
                         selected_player = p
-                        p_actions:AddLabel("Selected: " .. p.Name, library.theme.accent)
+                        for _, b in pairs(player_buttons) do 
+                            b.BackgroundColor3 = library.theme.foreground
+                            b.TextColor3 = library.theme.text_dark
+                        end
+                        p_btn.BackgroundColor3 = library.theme.accent:Lerp(Color3.new(0,0,0), 0.3)
+                        p_btn.TextColor3 = library.theme.text
                     end)
+                    table.insert(player_buttons, p_btn)
                 end
             end
         end
 
-        p_actions:AddButton("Teleport", function()
+        p_actions:AddButton("Teleport to Player", function()
             if selected_player and selected_player.Character then
                 players.LocalPlayer.Character:MoveTo(selected_player.Character.HumanoidRootPart.Position)
             end
         end)
 
-        p_actions:AddButton("Spectate", function()
+        p_actions:AddButton("Spectate Player", function()
             if selected_player and selected_player.Character then
                 workspace.CurrentCamera.CameraSubject = selected_player.Character.Humanoid
             end
         end)
 
-        p_actions:AddButton("Stop Spectate", function()
+        p_actions:AddButton("Stop Spectating", function()
             workspace.CurrentCamera.CameraSubject = players.LocalPlayer.Character.Humanoid
         end)
 
@@ -400,13 +511,16 @@ function library:CreateWindow(name, size, hidebutton)
     function window:CreateOptionsTab()
         local o_tab = self:CreateTab("Options")
         local themes = o_tab:CreateSector("Themes", "left")
-        local config = o_tab:CreateSector("Config", "right")
+        local config = o_tab:CreateSector("Configuration", "right")
 
-        themes:AddButton("Reset Accent (Matcha Rose)", function()
+        themes:AddButton("Reset Theme (Matcha)", function()
             library.theme.accent = Color3.fromRGB(255, 0, 150)
+            library.theme.background = Color3.fromRGB(15, 15, 18)
         end)
 
-        config:AddLabel("UI Keybind: V")
+        config:AddKeybind("Toggle UI Key", window.hidebutton, function(key)
+            window.hidebutton = key
+        end)
     end
 
     return window
