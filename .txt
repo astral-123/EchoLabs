@@ -216,10 +216,17 @@ function library:CreateWatermark()
     lbl.BackgroundTransparency=1;lbl.Text="phantom | 0 FPS | 0 MS"
     lbl.TextColor3=library.theme.text;lbl.Font=library.theme.font
     lbl.TextSize=12;lbl.TextXAlignment=Enum.TextXAlignment.Left
+    local lastT = os.clock()
+    local curFPS = 0
     run.RenderStepped:Connect(function()
-        local fps=math.floor(1/run.RenderStepped:Wait())
-        local ok,ping=pcall(function() return math.floor(stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
-        lbl.Text="phantom | "..fps.." FPS | "..(ok and ping or 0).." MS"
+        local now = os.clock()
+        local dt  = now - lastT
+        lastT     = now
+        curFPS    = dt > 0 and math.floor(1/dt) or curFPS
+        local ok, ping = pcall(function()
+            return math.floor(stats.Network.ServerStatsItem["Data Ping"]:GetValue())
+        end)
+        lbl.Text = "phantom | "..curFPS.." FPS | "..(ok and ping or 0).." MS"
     end)
 end
 
