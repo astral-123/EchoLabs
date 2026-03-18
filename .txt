@@ -1,8 +1,3 @@
---[[
-    PhantomLibrary.lua  v3
-    Minimize (-), Unload, Config System (.json), Color Pickers, Astral
-]]
-
 local library = {
     flags     = {},      -- { [flagName] = value }
     _elements = {},      -- { [flagName] = {type, ref, callback} }
