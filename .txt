@@ -439,50 +439,100 @@ function library:CreateWindow(title, hidekey)
                 library._elements[flagName]={type="dropdown",ref=state,cb=callback}
             end
             local cont=Instance.new("Frame",scroll)
-            cont.Size=UDim2.new(1,0,0,34);cont.BackgroundTransparency=1;cont.ClipsDescendants=false
+            cont.Size=UDim2.new(1,0,0,34);cont.BackgroundTransparency=1
+
             local lbl_=Instance.new("TextLabel",cont)
             lbl_.Size=UDim2.new(1,0,0,14);lbl_.BackgroundTransparency=1;lbl_.Text=text
             lbl_.TextColor3=library.theme.dim;lbl_.Font=library.theme.font_reg;lbl_.TextSize=11
             lbl_.TextXAlignment=Enum.TextXAlignment.Left
+
             local drop=Instance.new("TextButton",cont)
             drop.Size=UDim2.new(1,0,0,20);drop.Position=UDim2.new(0,0,0,14)
             drop.BackgroundColor3=library.theme.surface
             drop.Text="  "..(default or options[1] or "")
             drop.TextColor3=library.theme.text;drop.Font=library.theme.font_reg
-            drop.TextSize=12;drop.TextXAlignment=Enum.TextXAlignment.Left;drop.BorderSizePixel=0;corner(drop,3)
+            drop.TextSize=12;drop.TextXAlignment=Enum.TextXAlignment.Left
+            drop.BorderSizePixel=0;corner(drop,3)
+
             local arrow=Instance.new("TextLabel",drop)
             arrow.Size=UDim2.fromOffset(18,20);arrow.Position=UDim2.new(1,-20,0,0)
             arrow.BackgroundTransparency=1;arrow.Text="▼";arrow.TextColor3=library.theme.accent
             arrow.Font=library.theme.font;arrow.TextSize=9;arrow.TextXAlignment=Enum.TextXAlignment.Center
-            local list=Instance.new("Frame",cont)
-            list.Size=UDim2.new(1,0,0,0);list.Position=UDim2.new(0,0,0,34)
-            list.BackgroundColor3=library.theme.surface;list.Visible=false;list.ZIndex=50
-            list.BorderSizePixel=0;list.ClipsDescendants=true;corner(list,3)
+
+            -- ⚡ List is parented to W.sg (top-level ScreenGui) so it is NEVER clipped
+            local list=Instance.new("Frame", W.sg)
+            list.Size=UDim2.fromOffset(0,0)   -- starts collapsed
+            list.BackgroundColor3=library.theme.surface
+            list.Visible=false
+            list.ZIndex=200                   -- always on top of everything
+            list.BorderSizePixel=0
+            list.ClipsDescendants=true
+            corner(list,3)
+            mks(list, library.theme.accent, 1, 0.7)
             Instance.new("UIListLayout",list)
+
             local open=false
+
+            local function closeList()
+                open=false;list.Visible=false
+                tw:Create(list,TweenInfo.new(0.08),{Size=UDim2.fromOffset(drop.AbsoluteSize.X,0)}):Play()
+                tw:Create(arrow,TweenInfo.new(0.1),{Rotation=0}):Play()
+            end
+
+            local function openList()
+                -- Reposition list under the drop button in absolute screen coords
+                local abs=drop.AbsolutePosition
+                local w=drop.AbsoluteSize.X
+                local h=#options*20
+                list.Position=UDim2.fromOffset(abs.X, abs.Y+drop.AbsoluteSize.Y+2)
+                list.Size=UDim2.fromOffset(w,0)
+                list.Visible=true
+                tw:Create(list,TweenInfo.new(0.1),{Size=UDim2.fromOffset(w,h)}):Play()
+                tw:Create(arrow,TweenInfo.new(0.1),{Rotation=180}):Play()
+            end
+
             drop.MouseButton1Click:Connect(function()
-                open=not open;list.Visible=open
-                tw:Create(list,TweenInfo.new(0.1),{Size=open and UDim2.new(1,0,0,#options*20) or UDim2.new(1,0,0,0)}):Play()
-                tw:Create(arrow,TweenInfo.new(0.1),{Rotation=open and 180 or 0}):Play()
+                -- Close every other open dropdown first
+                if open then closeList() else openList() end
+                open=not open
             end)
+
             local function selOpt(opt)
                 drop.Text="  "..opt;state.value=opt
                 if flagName then library.flags[flagName]=opt end
-                open=false;list.Visible=false
-                tw:Create(list,TweenInfo.new(0.08),{Size=UDim2.new(1,0,0,0)}):Play()
-                tw:Create(arrow,TweenInfo.new(0.1),{Rotation=0}):Play()
+                closeList();open=false
                 if callback then callback(opt) end
             end
-            state.setValue=function(opt) drop.Text="  "..opt;state.value=opt;if callback then callback(opt) end end
+
+            state.setValue=function(opt)
+                drop.Text="  "..opt;state.value=opt
+                if callback then callback(opt) end
+            end
+
             for _,opt in ipairs(options) do
                 local ob=Instance.new("TextButton",list)
                 ob.Size=UDim2.new(1,0,0,20);ob.BackgroundTransparency=1;ob.Text="  "..opt
                 ob.TextColor3=library.theme.dim;ob.Font=library.theme.font_reg;ob.TextSize=12
-                ob.TextXAlignment=Enum.TextXAlignment.Left;ob.ZIndex=51
+                ob.TextXAlignment=Enum.TextXAlignment.Left;ob.ZIndex=201
                 ob.MouseEnter:Connect(function() ob.TextColor3=library.theme.text end)
                 ob.MouseLeave:Connect(function() ob.TextColor3=library.theme.dim end)
                 ob.MouseButton1Click:Connect(function() selOpt(opt) end)
             end
+
+            -- Close when clicking outside
+            uis.InputBegan:Connect(function(i)
+                if open and i.UserInputType==Enum.UserInputType.MouseButton1 then
+                    local mx=uis:GetMouseLocation()
+                    local lx,ly=list.AbsolutePosition.X,list.AbsolutePosition.Y
+                    local lw,lh=list.AbsoluteSize.X,list.AbsoluteSize.Y
+                    local dx,dy=drop.AbsolutePosition.X,drop.AbsolutePosition.Y
+                    local dw,dh=drop.AbsoluteSize.X,drop.AbsoluteSize.Y
+                    local inList=mx.X>=lx and mx.X<=lx+lw and mx.Y>=ly and mx.Y<=ly+lh
+                    local inDrop=mx.X>=dx and mx.X<=dx+dw and mx.Y>=dy and mx.Y<=dy+dh
+                    if not inList and not inDrop then closeList();open=false end
+                end
+            end)
+
             return state
         end
 
@@ -749,13 +799,23 @@ function library:CreateWindow(title, hidekey)
         dropArrow.BackgroundTransparency=1;dropArrow.Text="▼";dropArrow.TextColor3=library.theme.accent
         dropArrow.Font=library.theme.font;dropArrow.TextSize=9;dropArrow.TextXAlignment=Enum.TextXAlignment.Center
 
-        local dropList=Instance.new("Frame",dropFrame)
-        dropList.Size=UDim2.new(1,0,0,0);dropList.Position=UDim2.new(0,0,0,34)
-        dropList.BackgroundColor3=library.theme.surface;dropList.Visible=false;dropList.ZIndex=50
-        dropList.BorderSizePixel=0;dropList.ClipsDescendants=true;corner(dropList,3)
-        local dropLayout=Instance.new("UIListLayout",dropList)
+        -- ⚡ List parented to W.sg — jamais clippé par les parents scrolling
+        local dropList=Instance.new("Frame", W.sg)
+        dropList.Size=UDim2.fromOffset(0,0)
+        dropList.BackgroundColor3=library.theme.surface
+        dropList.Visible=false;dropList.ZIndex=200
+        dropList.BorderSizePixel=0;dropList.ClipsDescendants=true
+        corner(dropList,3);mks(dropList,library.theme.accent,1,0.7)
+        Instance.new("UIListLayout",dropList)
 
         local dropOpen=false
+
+        local function closeConfigDrop()
+            dropOpen=false;dropList.Visible=false
+            tw:Create(dropList,TweenInfo.new(0.08),{Size=UDim2.fromOffset(dropBtn.AbsoluteSize.X,0)}):Play()
+            tw:Create(dropArrow,TweenInfo.new(0.1),{Rotation=0}):Play()
+        end
+
         local function refreshDropdown()
             for _,c in ipairs(dropList:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
             local names=listConfigs()
@@ -767,14 +827,12 @@ function library:CreateWindow(title, hidekey)
                 local ob=Instance.new("TextButton",dropList)
                 ob.Size=UDim2.new(1,0,0,20);ob.BackgroundTransparency=1;ob.Text="  "..n
                 ob.TextColor3=library.theme.dim;ob.Font=library.theme.font_reg;ob.TextSize=12
-                ob.TextXAlignment=Enum.TextXAlignment.Left;ob.ZIndex=51
+                ob.TextXAlignment=Enum.TextXAlignment.Left;ob.ZIndex=201
                 ob.MouseEnter:Connect(function() ob.TextColor3=library.theme.text end)
                 ob.MouseLeave:Connect(function() ob.TextColor3=library.theme.dim end)
                 ob.MouseButton1Click:Connect(function()
                     cur.name=n;dropBtn.Text="  "..n
-                    dropOpen=false;dropList.Visible=false
-                    tw:Create(dropList,TweenInfo.new(0.08),{Size=UDim2.new(1,0,0,0)}):Play()
-                    tw:Create(dropArrow,TweenInfo.new(0.1),{Rotation=0}):Play()
+                    closeConfigDrop()
                 end)
             end
             if not cur.name then cur.name=names[1];dropBtn.Text="  "..names[1] end
@@ -784,14 +842,40 @@ function library:CreateWindow(title, hidekey)
             refreshDropdown()
             local names=listConfigs()
             if #names==0 then return end
-            dropOpen=not dropOpen;dropList.Visible=dropOpen
-            tw:Create(dropList,TweenInfo.new(0.1),{
-                Size=dropOpen and UDim2.new(1,0,0,#names*20) or UDim2.new(1,0,0,0)
-            }):Play()
-            tw:Create(dropArrow,TweenInfo.new(0.1),{Rotation=dropOpen and 180 or 0}):Play()
+            if dropOpen then closeConfigDrop();return end
+            -- Reposition sous le bouton en coords absolues
+            local abs=dropBtn.AbsolutePosition
+            local w=dropBtn.AbsoluteSize.X
+            local h=#names*20
+            dropList.Position=UDim2.fromOffset(abs.X, abs.Y+dropBtn.AbsoluteSize.Y+2)
+            dropList.Size=UDim2.fromOffset(w,0)
+            dropList.Visible=true
+            dropOpen=true
+            tw:Create(dropList,TweenInfo.new(0.1),{Size=UDim2.fromOffset(w,h)}):Play()
+            tw:Create(dropArrow,TweenInfo.new(0.1),{Rotation=180}):Play()
+        end)
+
+        -- Fermer si clic en dehors
+        uis.InputBegan:Connect(function(i)
+            if dropOpen and i.UserInputType==Enum.UserInputType.MouseButton1 then
+                local mx=uis:GetMouseLocation()
+                local lx,ly=dropList.AbsolutePosition.X,dropList.AbsolutePosition.Y
+                local lw,lh=dropList.AbsoluteSize.X,dropList.AbsoluteSize.Y
+                local dx,dy=dropBtn.AbsolutePosition.X,dropBtn.AbsolutePosition.Y
+                local dw,dh=dropBtn.AbsoluteSize.X,dropBtn.AbsoluteSize.Y
+                local inL=mx.X>=lx and mx.X<=lx+lw and mx.Y>=ly and mx.Y<=ly+lh
+                local inD=mx.X>=dx and mx.X<=dx+dw and mx.Y>=dy and mx.Y<=dy+dh
+                if not inL and not inD then closeConfigDrop() end
+            end
         end)
 
         refreshDropdown()
+
+        -- Refresh List button
+        cfg_s:AddButton("Refresh List", function()
+            refreshDropdown()
+            library:Notify("Config","Liste mise à jour",3)
+        end)
 
         local function applyConfig(name)
             local data=loadConfigFile(name)
