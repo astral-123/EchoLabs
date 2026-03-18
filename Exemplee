@@ -1,0 +1,48 @@
+--[[
+    PhantomLoader.lua  — exemple minimal
+    Remplace l'URL par celle de ton GitHub raw
+]]
+
+local Library = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/astral-123/EchoLabs/refs/heads/main/.txt"
+))()
+
+Library:CreateWatermark()
+
+local Window = Library:CreateWindow("Phantom Comfort beta", Enum.KeyCode.Insert)
+
+-- ─── Combat ───────────────────────────────────────────────────
+local CombatTab = Window:CreateTab("Combat")
+
+-- Gauche : Aimbot
+local Aimbot = CombatTab:CreateSector("Aimbot", "left")
+
+-- Le 5e argument est le flagName — utilisé pour sauvegarder/charger les configs
+Aimbot:AddToggle("Enabled", false, function(s)
+    print("Aimbot:", s)
+end, Enum.KeyCode.X, "aimbot_enabled")
+
+Aimbot:AddSlider("Distance", 0, 1065, 2000, 1, function(v)
+    print("Distance:", v)
+end, "aimbot_distance")
+
+Aimbot:AddDropdown("Hit Part", {"Head","Torso","Arms","Legs"}, "Head", function(o)
+    print("Hit Part:", o)
+end, "aimbot_hitpart")
+
+-- Droite : Silent Aim
+local SilentAim = CombatTab:CreateSector("Silent Aim", "right")
+
+SilentAim:AddToggle("Enabled", false, function(s)
+    print("Silent Aim:", s)
+end, Enum.KeyCode.E, "silent_enabled")
+
+SilentAim:AddDropdown("Methods", {"Default","Experimental","Bypass"}, "Experimental", function(o)
+    print("Method:", o)
+end, "silent_method")
+
+-- ─── Onglets spéciaux ─────────────────────────────────────────
+Window:CreatePlayerTab()
+Window:CreateOptionsTab()   -- Couleurs + Config + FPS Booster + Minimize + Unload
+
+Library:Notify("Phantom Comfort", "Loaded successfully.", 6)
