@@ -1,6 +1,6 @@
 --[[
     MatchaLibrary.lua
-    Design: Matcha (Exact Photo Style)
+    Design: Matcha (Exact Photo Style - V2 Corrected)
     Structure: EchoLabs (CreateWindow, CreateTab, CreateSector, etc.)
 ]]
 
@@ -34,8 +34,8 @@ function library:CreateWindow(name, size, hidebutton)
     window.main.Name = name
 
     window.frame = Instance.new("Frame", window.main)
-    window.frame.Size = UDim2.fromOffset(600, 450)
-    window.frame.Position = UDim2.new(0.5, -300, 0.5, -225)
+    window.frame.Size = UDim2.fromOffset(650, 500)
+    window.frame.Position = UDim2.new(0.5, -325, 0.5, -250)
     window.frame.BackgroundColor3 = library.theme.background
     window.frame.BorderSizePixel = 0
     window.frame.Active = true
@@ -44,36 +44,36 @@ function library:CreateWindow(name, size, hidebutton)
     local corner = Instance.new("UICorner", window.frame)
     corner.CornerRadius = UDim.new(0, 6)
 
-    -- Top Bar (Nom du script)
+    -- Top Info
     local top_info = Instance.new("TextLabel", window.frame)
-    top_info.Size = UDim2.new(1, -20, 0, 30)
-    top_info.Position = UDim2.new(0, 10, 0, 5)
+    top_info.Size = UDim2.new(1, -40, 0, 40)
+    top_info.Position = UDim2.new(0, 20, 0, 10)
     top_info.BackgroundTransparency = 1
     top_info.Text = "Matcha  Comfort  beta"
     top_info.TextColor3 = library.theme.accent
     top_info.Font = library.theme.font
-    top_info.TextSize = 14
+    top_info.TextSize = 16
     top_info.TextXAlignment = Enum.TextXAlignment.Left
 
-    -- Tabs Container (Horizontal comme sur la photo)
+    -- Tabs Container (Horizontal)
     window.tab_container = Instance.new("Frame", window.frame)
-    window.tab_container.Size = UDim2.new(1, -20, 0, 30)
-    window.tab_container.Position = UDim2.new(0, 10, 0, 35)
+    window.tab_container.Size = UDim2.new(1, -40, 0, 30)
+    window.tab_container.Position = UDim2.new(0, 20, 0, 50)
     window.tab_container.BackgroundTransparency = 1
 
     local tab_layout = Instance.new("UIListLayout", window.tab_container)
     tab_layout.FillDirection = Enum.FillDirection.Horizontal
-    tab_layout.Padding = UDim.new(0, 15)
+    tab_layout.Padding = UDim.new(0, 20)
 
     -- Content Frame
     window.content = Instance.new("Frame", window.frame)
-    window.content.Size = UDim2.new(1, -20, 1, -80)
-    window.content.Position = UDim2.new(0, 10, 0, 70)
+    window.content.Size = UDim2.new(1, -40, 1, -100)
+    window.content.Position = UDim2.new(0, 20, 0, 90)
     window.content.BackgroundTransparency = 1
 
     function window:CreateTab(name)
         local tab = {
-            sectors = {left = {}, right = {}},
+            sectors = {},
             button = Instance.new("TextButton", window.tab_container),
             frame = Instance.new("Frame", window.content)
         }
@@ -83,38 +83,38 @@ function library:CreateWindow(name, size, hidebutton)
         tab.button.Text = name
         tab.button.TextColor3 = library.theme.text_dark
         tab.button.Font = library.theme.font
-        tab.button.TextSize = 13
+        tab.button.TextSize = 14
+        tab.button.BorderSizePixel = 0
 
         tab.frame.Size = UDim2.new(1, 0, 1, 0)
         tab.frame.BackgroundTransparency = 1
         tab.frame.Visible = false
 
-        -- SubTabs (Aimbot, Prediction, etc.)
-        local subtab_container = Instance.new("Frame", tab.frame)
-        subtab_container.Size = UDim2.new(1, 0, 0, 25)
-        subtab_container.BackgroundTransparency = 1
+        -- SubTabs (Optional, Placeholder)
+        local sub_container = Instance.new("Frame", tab.frame)
+        sub_container.Size = UDim2.new(1, 0, 0, 25)
+        sub_container.BackgroundTransparency = 1
         
-        local subtab_layout = Instance.new("UIListLayout", subtab_container)
-        subtab_layout.FillDirection = Enum.FillDirection.Horizontal
-        subtab_layout.Padding = UDim.new(0, 15)
+        local sub_layout = Instance.new("UIListLayout", sub_container)
+        sub_layout.FillDirection = Enum.FillDirection.Horizontal
+        sub_layout.Padding = UDim.new(0, 15)
 
-        local sector_frame = Instance.new("Frame", tab.frame)
-        sector_frame.Size = UDim2.new(1, 0, 1, -30)
-        sector_frame.Position = UDim2.new(0, 0, 0, 30)
-        sector_frame.BackgroundTransparency = 1
-
-        local left_col = Instance.new("ScrollingFrame", sector_frame)
-        left_col.Size = UDim2.new(0.5, -5, 1, 0)
+        -- Columns (Left / Right)
+        local left_col = Instance.new("ScrollingFrame", tab.frame)
+        left_col.Size = UDim2.new(0.5, -10, 1, -30)
+        left_col.Position = UDim2.new(0, 0, 0, 30)
         left_col.BackgroundTransparency = 1
         left_col.ScrollBarThickness = 0
-        Instance.new("UIListLayout", left_col).Padding = UDim.new(0, 15)
+        left_col.CanvasSize = UDim2.new(0, 0, 0, 0)
+        Instance.new("UIListLayout", left_col).Padding = UDim.new(0, 20)
 
-        local right_col = Instance.new("ScrollingFrame", sector_frame)
-        right_col.Size = UDim2.new(0.5, -5, 1, 0)
-        right_col.Position = UDim2.new(0.5, 5, 0, 0)
+        local right_col = Instance.new("ScrollingFrame", tab.frame)
+        right_col.Size = UDim2.new(0.5, -10, 1, -30)
+        right_col.Position = UDim2.new(0.5, 10, 0, 30)
         right_col.BackgroundTransparency = 1
         right_col.ScrollBarThickness = 0
-        Instance.new("UIListLayout", right_col).Padding = UDim.new(0, 15)
+        right_col.CanvasSize = UDim2.new(0, 0, 0, 0)
+        Instance.new("UIListLayout", right_col).Padding = UDim.new(0, 20)
 
         tab.button.MouseButton1Click:Connect(function()
             for _, t in pairs(window.tabs) do
@@ -137,18 +137,22 @@ function library:CreateWindow(name, size, hidebutton)
             }
             
             local s_frame = Instance.new("Frame", sector.container)
-            s_frame.Size = UDim2.new(1, 0, 0, 100)
+            s_frame.Size = UDim2.new(1, 0, 0, 0)
             s_frame.BackgroundTransparency = 1
             
             local s_layout = Instance.new("UIListLayout", s_frame)
-            s_layout.Padding = UDim.new(0, 8)
+            s_layout.Padding = UDim.new(0, 10)
+            s_layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                s_frame.Size = UDim2.new(1, 0, 0, s_layout.AbsoluteContentSize.Y)
+                sector.container.CanvasSize = UDim2.new(0, 0, 0, sector.container.UIListLayout.AbsoluteContentSize.Y)
+            end)
 
             local s_title = Instance.new("TextLabel", s_frame)
             s_title.Size = UDim2.new(1, 0, 0, 20)
             s_title.Text = name
             s_title.TextColor3 = library.theme.accent
             s_title.Font = library.theme.font
-            s_title.TextSize = 13
+            s_title.TextSize = 14
             s_title.TextXAlignment = Enum.TextXAlignment.Left
             s_title.BackgroundTransparency = 1
 
@@ -160,19 +164,19 @@ function library:CreateWindow(name, size, hidebutton)
                 btn.Text = ""
 
                 local box = Instance.new("Frame", btn)
-                box.Size = UDim2.fromOffset(14, 14)
-                box.Position = UDim2.new(0, 0, 0.5, -7)
+                box.Size = UDim2.fromOffset(16, 16)
+                box.Position = UDim2.new(0, 0, 0.5, -8)
                 box.BackgroundColor3 = library.theme.foreground
                 box.BorderSizePixel = 0
-                Instance.new("UICorner", box).CornerRadius = UDim.new(0, 3)
+                Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
 
                 local label = Instance.new("TextLabel", btn)
-                label.Size = UDim2.new(1, -20, 1, 0)
-                label.Position = UDim2.new(0, 20, 0, 0)
+                label.Size = UDim2.new(1, -25, 1, 0)
+                label.Position = UDim2.new(0, 25, 0, 0)
                 label.Text = text
                 label.TextColor3 = library.theme.text_dark
                 label.Font = library.theme.font
-                label.TextSize = 12
+                label.TextSize = 13
                 label.TextXAlignment = Enum.TextXAlignment.Left
                 label.BackgroundTransparency = 1
 
@@ -187,13 +191,12 @@ function library:CreateWindow(name, size, hidebutton)
                     update()
                 end)
                 update()
-                s_frame.Size = UDim2.new(1, 0, 0, s_layout.AbsoluteContentSize.Y)
                 return toggle
             end
 
             function sector:AddSlider(text, min, default, max, step, callback)
                 local container = Instance.new("Frame", s_frame)
-                container.Size = UDim2.new(1, 0, 0, 30)
+                container.Size = UDim2.new(1, 0, 0, 35)
                 container.BackgroundTransparency = 1
 
                 local label = Instance.new("TextLabel", container)
@@ -201,7 +204,7 @@ function library:CreateWindow(name, size, hidebutton)
                 label.Text = text
                 label.TextColor3 = library.theme.text_dark
                 label.Font = library.theme.font
-                label.TextSize = 12
+                label.TextSize = 13
                 label.TextXAlignment = Enum.TextXAlignment.Left
                 label.BackgroundTransparency = 1
 
@@ -211,13 +214,13 @@ function library:CreateWindow(name, size, hidebutton)
                 val.Text = tostring(default)
                 val.TextColor3 = library.theme.text
                 val.Font = library.theme.font
-                val.TextSize = 12
+                val.TextSize = 13
                 val.TextXAlignment = Enum.TextXAlignment.Right
                 val.BackgroundTransparency = 1
 
                 local bar = Instance.new("Frame", container)
                 bar.Size = UDim2.new(1, 0, 0, 4)
-                bar.Position = UDim2.new(0, 0, 0, 20)
+                bar.Position = UDim2.new(0, 0, 0, 22)
                 bar.BackgroundColor3 = library.theme.foreground
                 bar.BorderSizePixel = 0
                 Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 2)
@@ -228,7 +231,33 @@ function library:CreateWindow(name, size, hidebutton)
                 fill.BorderSizePixel = 0
                 Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 2)
 
-                s_frame.Size = UDim2.new(1, 0, 0, s_layout.AbsoluteContentSize.Y)
+                -- Slider Logic (Simplified)
+                bar.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local move_connection
+                        local function update_slider()
+                            local mouse_pos = uis:GetMouseLocation().X
+                            local bar_pos = bar.AbsolutePosition.X
+                            local bar_size = bar.AbsoluteSize.X
+                            local percent = math.clamp((mouse_pos - bar_pos) / bar_size, 0, 1)
+                            local value = math.floor(min + (max - min) * percent)
+                            fill.Size = UDim2.new(percent, 0, 1, 0)
+                            val.Text = tostring(value)
+                            callback(value)
+                        end
+                        update_slider()
+                        move_connection = uis.InputChanged:Connect(function(input)
+                            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                                update_slider()
+                            end
+                        end)
+                        uis.InputEnded:Connect(function(input)
+                            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                                move_connection:Disconnect()
+                            end
+                        end)
+                    end
+                end)
             end
 
             function sector:AddDropdown(text, options, default, multi, callback)
@@ -239,11 +268,20 @@ function library:CreateWindow(name, size, hidebutton)
                 drop.Text = "  " .. text .. " : " .. (default or "None")
                 drop.TextColor3 = library.theme.text_dark
                 drop.Font = library.theme.font
-                drop.TextSize = 12
+                drop.TextSize = 13
                 drop.TextXAlignment = Enum.TextXAlignment.Left
                 Instance.new("UICorner", drop).CornerRadius = UDim.new(0, 4)
-                
-                s_frame.Size = UDim2.new(1, 0, 0, s_layout.AbsoluteContentSize.Y)
+            end
+
+            function sector:AddLabel(text, color)
+                local label = Instance.new("TextLabel", s_frame)
+                label.Size = UDim2.new(1, 0, 0, 20)
+                label.Text = text
+                label.TextColor3 = color or library.theme.text_dark
+                label.Font = library.theme.font
+                label.TextSize = 13
+                label.TextXAlignment = Enum.TextXAlignment.Left
+                label.BackgroundTransparency = 1
             end
 
             return sector
