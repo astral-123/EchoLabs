@@ -591,6 +591,64 @@ function library:CreateWindow(title, hidekey)
             end)
         end
 
+        function api:AddTextbox(label_text, placeholder, callback)
+            local state = {value = ""}
+
+            local cont = Instance.new("Frame", scroll)
+            cont.Size = UDim2.new(1,0,0,36)
+            cont.BackgroundTransparency = 1
+
+            local lbl_ = Instance.new("TextLabel", cont)
+            lbl_.Size = UDim2.new(1,0,0,14)
+            lbl_.BackgroundTransparency = 1
+            lbl_.Text = label_text
+            lbl_.TextColor3 = library.theme.dim
+            lbl_.Font = library.theme.font_reg
+            lbl_.TextSize = 11
+            lbl_.TextXAlignment = Enum.TextXAlignment.Left
+
+            local box_frame = Instance.new("Frame", cont)
+            box_frame.Size = UDim2.new(1,0,0,20)
+            box_frame.Position = UDim2.new(0,0,0,15)
+            box_frame.BackgroundColor3 = library.theme.surface
+            box_frame.BorderSizePixel = 0
+            corner(box_frame, 3)
+            local bs = mks(box_frame, library.theme.dim, 1, 0.5)
+
+            local tb = Instance.new("TextBox", box_frame)
+            tb.Size = UDim2.new(1,-8,1,0)
+            tb.Position = UDim2.new(0,4,0,0)
+            tb.BackgroundTransparency = 1
+            tb.Text = ""
+            tb.PlaceholderText = placeholder or "..."
+            tb.PlaceholderColor3 = library.theme.dim
+            tb.TextColor3 = library.theme.text
+            tb.Font = library.theme.font_reg
+            tb.TextSize = 12
+            tb.TextXAlignment = Enum.TextXAlignment.Left
+            tb.ClearTextOnFocus = false
+
+            -- Highlight border on focus
+            tb.Focused:Connect(function()
+                W.is_interacting = true
+                tw:Create(bs, TweenInfo.new(0.1), {Color = library.theme.accent, Transparency = 0}):Play()
+            end)
+            tb.FocusLost:Connect(function(enter)
+                W.is_interacting = false
+                tw:Create(bs, TweenInfo.new(0.1), {Color = library.theme.dim, Transparency = 0.5}):Play()
+                state.value = tb.Text
+                if callback then callback(tb.Text, enter) end
+            end)
+
+            state.setValue = function(v)
+                state.value = v
+                tb.Text = v
+            end
+            state.getValue = function() return tb.Text end
+
+            return state
+        end
+
         return api
     end
 
@@ -871,6 +929,9 @@ function library:CreateWindow(title, hidekey)
 
         refreshDropdown()
 
+        -- Input pour le nom de la config
+        local cfg_name_input = cfg_s:AddTextbox("Nom de la config", "ex: mon_config", function(val) end)
+
         -- Refresh List button
         cfg_s:AddButton("Refresh List", function()
             refreshDropdown()
@@ -888,12 +949,15 @@ function library:CreateWindow(title, hidekey)
         end
 
         cfg_s:AddButton("Create Config",function()
-            local names=listConfigs()
-            local n="config_"..(#names+1)
+            local typed = cfg_name_input.getValue()
+            -- Nom depuis l'input, sinon auto-incrémenté
+            local n = (typed and typed ~= "") and typed:gsub("[^%w_%-]","_")
+                      or ("config_"..(#listConfigs()+1))
             local data={}
             for flag,val in pairs(library.flags) do data[flag]=val end
             if saveConfigFile(n,data) then
                 cur.name=n;refreshDropdown()
+                cfg_name_input.setValue("")   -- vide l'input après création
                 library:Notify("Config","Créée : "..n,4)
             else
                 library:Notify("Config","Erreur : writefile indisponible",4)
