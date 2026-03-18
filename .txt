@@ -1,3 +1,8 @@
+--[[
+    PhantomLibrary.lua  v3
+    Minimize (-), Unload, Config System (.json), Color Pickers, Astral
+]]
+
 local library = {
     flags     = {},      -- { [flagName] = value }
     _elements = {},      -- { [flagName] = {type, ref, callback} }
@@ -211,17 +216,27 @@ function library:CreateWatermark()
     lbl.BackgroundTransparency=1;lbl.Text="phantom | 0 FPS | 0 MS"
     lbl.TextColor3=library.theme.text;lbl.Font=library.theme.font
     lbl.TextSize=12;lbl.TextXAlignment=Enum.TextXAlignment.Left
-    local lastT = os.clock()
-    local curFPS = 0
-    run.RenderStepped:Connect(function()
-        local now = os.clock()
-        local dt  = now - lastT
-        lastT     = now
-        curFPS    = dt > 0 and math.floor(1/dt) or curFPS
-        local ok, ping = pcall(function()
-            return math.floor(stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-        end)
-        lbl.Text = "phantom | "..curFPS.." FPS | "..(ok and ping or 0).." MS"
+
+    -- FPS counter via task.spawn pour eviter tout yield problem
+    task.spawn(function()
+        local lastT  = os.clock()
+        local curFPS = 0
+        while sg and sg.Parent do
+            run.RenderStepped:Wait()   -- yield safe ici car c'est dans task.spawn
+            local now  = os.clock()
+            local dt   = now - lastT
+            lastT      = now
+            if dt > 0 then curFPS = math.floor(1/dt) end
+
+            local pingStr = "0"
+            pcall(function()
+                local v = stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+                pingStr = tostring(math.floor(v))
+            end)
+
+            -- tostring() sur tout pour garantir aucun nil
+            lbl.Text = "phantom | "..tostring(curFPS).." FPS | "..pingStr.." MS"
+        end
     end)
 end
 
