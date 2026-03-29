@@ -1,3 +1,7 @@
+--[[
+ Kern
+]]
+
 local library = {
     flags     = {},
     _elements = {},
@@ -5,7 +9,7 @@ local library = {
         bg       = Color3.fromRGB(12, 12, 12),      -- Fond noir profond
         surface  = Color3.fromRGB(22, 22, 22),      -- Surfaces secondaires
         border   = Color3.fromRGB(45, 45, 45),      -- Bordures fines grises
-        accent   = Color3.fromRGB(255, 255, 255),    -- ACCENT BLANC (comme sur la photo)
+        accent   = Color3.fromRGB(200, 0, 0),       -- ACCENT ROUGE pour l'indicateur d'onglet et les coches
         text     = Color3.fromRGB(240, 240, 240),    -- Texte blanc cassé
         dim      = Color3.fromRGB(150, 150, 150),    -- Texte grisé
         font     = Enum.Font.GothamBold,
@@ -279,8 +283,8 @@ function library:CreateWindow(title, hidekey)
     W.sg = sg
 
     local frame = Instance.new("Frame", sg)
-    frame.Size             = UDim2.fromOffset(560, 420)
-    frame.Position         = UDim2.new(0.5, -280, 0.5, -210)
+    frame.Size             = UDim2.fromOffset(750, 480) -- Agrandissement de la fenêtre
+    frame.Position         = UDim2.new(0.5, -375, 0.5, -240) -- Centrage
     frame.BackgroundColor3 = library.theme.bg
     frame.BorderSizePixel  = 0
     W.frame = frame
@@ -323,7 +327,7 @@ function library:CreateWindow(title, hidekey)
 
     local indicator = Instance.new("Frame", tabbar)
     indicator.Size             = UDim2.new(0, 0, 0, 2)
-    indicator.Position         = UDim2.new(0, 0, 0, 0)
+    indicator.Position         = UDim2.new(0, 0, 1, -2) -- Positionné en bas de la tabbar
     indicator.BackgroundColor3 = library.theme.accent
     indicator.BorderSizePixel  = 0; indicator.ZIndex = 5
     W.indicator = indicator
@@ -355,7 +359,7 @@ function library:CreateWindow(title, hidekey)
     function W:CreateSector(name, side, parent_frame)
         local api = {}
         local cont = Instance.new("Frame", parent_frame)
-        cont.Size = UDim2.new(1, -10, 1, -10)
+        cont.Size = UDim2.new(1, 0, 1, 0)
         cont.BackgroundTransparency = 1
         
         local scroll = Instance.new("ScrollingFrame", cont)
@@ -780,10 +784,11 @@ function library:CreateWindow(title, hidekey)
     -- CreateTab
     -- ══════════════════════════════════════════════════════════
     function W:CreateTab(name)
-        local tab = { name = name, sectors = {} }
+        local tab = { name = name, left_sector = nil, right_sector = nil }
 
+        -- Bouton dans la tabbar du bas
         tab.btn = Instance.new("TextButton", tabbar)
-        tab.btn.Size               = UDim2.fromOffset(100, 40)
+        tab.btn.Size               = UDim2.fromOffset(100, 40) -- Taille fixe pour les onglets
         tab.btn.BackgroundTransparency = 1
         tab.btn.Text               = name
         tab.btn.TextColor3         = library.theme.dim
@@ -791,14 +796,43 @@ function library:CreateWindow(title, hidekey)
         tab.btn.TextSize           = 13
         tab.btn.BorderSizePixel    = 0
 
+        -- Frame de contenu
         tab.frame = Instance.new("Frame", W.content)
         tab.frame.Size             = UDim2.new(1, 0, 1, 0)
         tab.frame.BackgroundTransparency = 1
         tab.frame.Visible          = false
-        
-        local gl = Instance.new("UIGridLayout", tab.frame)
-        gl.CellPadding = UDim2.fromOffset(10, 10)
-        gl.CellSize = UDim2.new(0.5, -5, 1, 0)
+        tab.frame.ClipsDescendants = true
+
+        -- Séparateur vertical central
+        local cs = Instance.new("Frame", tab.frame)
+        cs.Size             = UDim2.new(0, 1, 1, 0)
+        cs.Position         = UDim2.new(0.5, -1, 0, 0)
+        cs.BackgroundColor3 = library.theme.border
+        cs.BorderSizePixel  = 0
+
+        -- Contenu gauche
+        local left_content_frame = Instance.new("Frame", tab.frame)
+        left_content_frame.Size             = UDim2.new(0.5, -1, 1, 0)
+        left_content_frame.Position         = UDim2.new(0, 0, 0, 0)
+        left_content_frame.BackgroundTransparency = 1
+        left_content_frame.ClipsDescendants = true
+        local left_padding = Instance.new("UIPadding", left_content_frame)
+        left_padding.PaddingLeft = UDim.new(0, 10)
+        left_padding.PaddingRight = UDim.new(0, 10)
+        left_padding.PaddingTop = UDim.new(0, 10)
+        left_padding.PaddingBottom = UDim.new(0, 10)
+
+        -- Contenu droit
+        local right_content_frame = Instance.new("Frame", tab.frame)
+        right_content_frame.Size             = UDim2.new(0.5, -1, 1, 0)
+        right_content_frame.Position         = UDim2.new(0.5, 1, 0, 0)
+        right_content_frame.BackgroundTransparency = 1
+        right_content_frame.ClipsDescendants = true
+        local right_padding = Instance.new("UIPadding", right_content_frame)
+        right_padding.PaddingLeft = UDim.new(0, 10)
+        right_padding.PaddingRight = UDim.new(0, 10)
+        right_padding.PaddingTop = UDim.new(0, 10)
+        right_padding.PaddingBottom = UDim.new(0, 10)
 
         tab.btn.MouseButton1Click:Connect(function()
             for _, t in ipairs(W.tabs) do
@@ -809,13 +843,14 @@ function library:CreateWindow(title, hidekey)
             tab.btn.TextColor3 = library.theme.text
             tw:Create(W.indicator, TweenInfo.new(0.12), {
                 Size = UDim2.new(0, tab.btn.AbsoluteSize.X, 0, 2),
-                Position = UDim2.new(0, tab.btn.AbsolutePosition.X - tabbar.AbsolutePosition.X, 0, 0)
+                Position = UDim2.new(0, tab.btn.AbsolutePosition.X - tabbar.AbsolutePosition.X, 1, -2)
             }):Play()
         end)
 
-        function tab:CreateSector(sname)
-            local s = W:CreateSector(sname, nil, tab.frame)
-            table.insert(tab.sectors, s)
+        function tab:CreateSector(sname, side)
+            local parent = (side == "left") and left_content_frame or right_content_frame
+            local s = W:CreateSector(sname, side, parent)
+            if side == "left" then tab.left_sector = s else tab.right_sector = s end
             return s
         end
 
@@ -826,7 +861,7 @@ function library:CreateWindow(title, hidekey)
             task.spawn(function()
                 task.wait(0.1)
                 W.indicator.Size = UDim2.new(0, tab.btn.AbsoluteSize.X, 0, 2)
-                W.indicator.Position = UDim2.new(0, tab.btn.AbsolutePosition.X - tabbar.AbsolutePosition.X, 0, 0)
+                W.indicator.Position = UDim2.new(0, tab.btn.AbsolutePosition.X - tabbar.AbsolutePosition.X, 1, -2)
             end)
         end
         return tab
