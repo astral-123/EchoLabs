@@ -1,48 +1,108 @@
---[[
-    PhantomLoader.lua  — exemple minimal
-    Remplace l'URL par celle de ton GitHub raw
-]]
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/astral-123/EchoLabs/refs/heads/main/.txt"))()
 
-local Library = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/astral-123/EchoLabs/refs/heads/main/.txt"
-))()
+-- Création de la fenêtre principale
+local window = library:CreateWindow("Kern", Enum.KeyCode.Insert)
 
-Library:CreateWatermark()
+-- Création du Watermark (en haut à gauche)
+library:CreateWatermark()
 
-local Window = Library:CreateWindow("Phantom Comfort beta", Enum.KeyCode.Insert)
+-- ── ONGLET VISUALS (Comme sur ta photo) ──────────────────────────
+local visuals = window:CreateTab("Visuals")
+local esp_left_sector = visuals:CreateSector("ESP Settings", "left")
+local esp_right_sector = visuals:CreateSector("Player Settings", "right")
 
--- ─── Combat ───────────────────────────────────────────────────
-local CombatTab = Window:CreateTab("Combat")
+esp_left_sector:AddToggle("Enable ESP", true, function(state)
+    print("ESP Status:", state)
+end)
 
--- Gauche : Aimbot
-local Aimbot = CombatTab:CreateSector("Aimbot", "left")
+esp_left_sector:AddToggle("Show Team", false, function(state)
+    print("Show Team:", state)
+end)
 
--- Le 5e argument est le flagName — utilisé pour sauvegarder/charger les configs
-Aimbot:AddToggle("Enabled", false, function(s)
-    print("Aimbot:", s)
-end, Enum.KeyCode.X, "aimbot_enabled")
+esp_left_sector:AddToggle("Show Downed", true, function(state)
+    print("Show Downed:", state)
+end)
 
-Aimbot:AddSlider("Distance", 0, 1065, 2000, 1, function(v)
-    print("Distance:", v)
-end, "aimbot_distance")
+esp_left_sector:AddToggle("Visible Only", false, function(state)
+    print("Visible Only:", state)
+end)
 
-Aimbot:AddDropdown("Hit Part", {"Head","Torso","Arms","Legs"}, "Head", function(o)
-    print("Hit Part:", o)
-end, "aimbot_hitpart")
+esp_left_sector:AddToggle("Player Distance", true, function(state)
+    print("Player Distance:", state)
+end)
 
--- Droite : Silent Aim
-local SilentAim = CombatTab:CreateSector("Silent Aim", "right")
+esp_left_sector:AddSlider("Distance Max", 0, 800, 2000, 50, function(val)
+    print("Max Distance set to:", val)
+end)
 
-SilentAim:AddToggle("Enabled", false, function(s)
-    print("Silent Aim:", s)
-end, Enum.KeyCode.E, "silent_enabled")
+esp_right_sector:AddDropdown("Player Box Type", {"Full Box", "Corner Box", "Outline"}, "Full Box", function(selected)
+    print("Player Box Type:", selected)
+end)
 
-SilentAim:AddDropdown("Methods", {"Default","Experimental","Bypass"}, "Experimental", function(o)
-    print("Method:", o)
-end, "silent_method")
+esp_right_sector:AddDropdown("Player Line Type", {"Bottom to Enemy", "Top to Enemy", "Center to Enemy"}, "Bottom to Enemy", function(selected)
+    print("Player Line Type:", selected)
+end)
 
--- ─── Onglets spéciaux ─────────────────────────────────────────
-Window:CreatePlayerTab()
-Window:CreateOptionsTab()   -- Couleurs + Config + FPS Booster + Minimize + Unload
+esp_right_sector:AddToggle("Show Zombies", true, function(state)
+    print("Show Zombies:", state)
+end)
 
-Library:Notify("Phantom Comfort", "Loaded successfully.", 6)
+esp_right_sector:AddToggle("Zombies Box", true, function(state)
+    print("Zombies Box:", state)
+end)
+
+-- ── ONGLET AIMBOT ──────────────────────────────────────────
+local aimbot = window:CreateTab("Aimbot")
+local aim_left_sector = aimbot:CreateSector("Aimbot Main", "left")
+local aim_right_sector = aimbot:CreateSector("Advanced", "right")
+
+aim_left_sector:AddToggle("Silent Aim", false, function(state)
+    print("Silent Aim:", state)
+end)
+
+aim_left_sector:AddSlider("FOV Radius", 0, 150, 800, 1, function(val)
+    print("FOV set to:", val)
+end)
+
+aim_left_sector:AddDropdown("Hitbox Priority", {"Head", "Torso", "Random"}, "Head", function(selected)
+    print("Priority:", selected)
+end)
+
+-- ── ONGLET COLORS (Pour ajuster si besoin) ──────────────────────
+local colors = window:CreateTab("Colors")
+local theme_left_sector = colors:CreateSector("Theme", "left")
+local theme_right_sector = colors:CreateSector("Presets", "right")
+
+theme_left_sector:AddColorPicker("Accent Color", library.theme.accent, function(color)
+    library.theme.accent = color
+    window.indicator.BackgroundColor3 = color
+end)
+
+theme_left_sector:AddColorPicker("Text Color", library.theme.text, function(color)
+    library.theme.text = color
+end)
+
+theme_left_sector:AddColorPicker("Dim Color", library.theme.dim, function(color)
+    library.theme.dim = color
+end)
+
+theme_left_sector:AddColorPicker("Background Color", library.theme.bg, function(color)
+    library.theme.bg = color
+    window.frame.BackgroundColor3 = color
+end)
+
+theme_left_sector:AddColorPicker("Surface Color", library.theme.surface, function(color)
+    library.theme.surface = color
+end)
+
+theme_right_sector:AddButton("Default (Red)", function()
+    library.theme.accent = Color3.fromRGB(200, 0, 0)
+    library.theme.text = Color3.fromRGB(240, 240, 240)
+    library.theme.dim = Color3.fromRGB(150, 150, 150)
+    library.theme.bg = Color3.fromRGB(12, 12, 12)
+    library.theme.surface = Color3.fromRGB(22, 22, 22)
+    window.indicator.BackgroundColor3 = library.theme.accent
+end)
+
+-- Notification de chargement
+library:Notify("Phantom", "Interface chargée avec succès (Insert pour masquer)", 5)
