@@ -730,10 +730,17 @@ function library:CreateWindow(title, hidekey)
             keybtn.TextColor3       = library.theme.accent
             stroke(keybtn, library.theme.border, 1)
 
-            local function keyName(k)
-                if k == Enum.KeyCode.Unknown then return "NONE" end
-                return k.Name
-            end
+local function keyName(k)
+    if k == Enum.KeyCode.Unknown or k == nil then return "NONE" end
+    if typeof(k) == "EnumItem" then
+        if k.EnumType == Enum.KeyCode then return k.Name end
+        -- Souris
+        if k == Enum.UserInputType.MouseButton1 then return "Mouse1" end
+        if k == Enum.UserInputType.MouseButton2 then return "Mouse2" end
+        if k == Enum.UserInputType.MouseButton3 then return "Mouse3" end
+    end
+    return "NONE"
+end
 
             keybtn.Text = "[ "..keyName(state.key).." ]"
 
@@ -755,27 +762,38 @@ function library:CreateWindow(title, hidekey)
                 keybtn.Text      = "[ ... ]"
                 keybtn.TextColor3 = library.theme.dim
 
-                listenConn = uis.InputBegan:Connect(function(input, gameProcessed)
-                    if gameProcessed then return end
-                    if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+listenConn = uis.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
 
-                    if input.KeyCode == Enum.KeyCode.Escape then
-                        -- Annulation : on remet l'ancienne valeur
-                        keybtn.Text      = "[ "..keyName(state.key).." ]"
-                        keybtn.TextColor3 = library.theme.accent
-                        stopListen()
-                        return
-                    end
+    -- Annulation
+    if input.UserInputType == Enum.UserInputType.Keyboard
+       and input.KeyCode == Enum.KeyCode.Escape then
+        keybtn.Text       = "[ "..keyName(state.key).." ]"
+        keybtn.TextColor3 = library.theme.accent
+        stopListen()
+        return
+    end
 
-                    -- Assignation
-                    state.key        = input.KeyCode
-                    keybtn.Text      = "[ "..keyName(state.key).." ]"
-                    keybtn.TextColor3 = library.theme.accent
+    -- Clavier
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        state.key = input.KeyCode
 
-                    if flagName then library.flags[flagName] = state.key end
-                    stopListen()
-                end)
-            end
+    -- Souris (MB1, MB2, MB3, etc.)
+    elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+        state.key = Enum.UserInputType.MouseButton1
+    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+        state.key = Enum.UserInputType.MouseButton2
+    elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+        state.key = Enum.UserInputType.MouseButton3
+    else
+        return -- autre input ignoré
+    end
+
+    keybtn.Text       = "[ "..keyName(state.key).." ]"
+    keybtn.TextColor3 = library.theme.accent
+    if flagName then library.flags[flagName] = state.key end
+    stopListen()
+end)
 
             -- Clic gauche → écoute
             keybtn.MouseButton1Click:Connect(startListen)
@@ -800,15 +818,24 @@ function library:CreateWindow(title, hidekey)
             end)
 
             -- Écoute globale : déclenche le callback quand la touche est pressée
-            uis.InputBegan:Connect(function(input, gameProcessed)
-                if gameProcessed then return end
-                if state.listening then return end
-                if state.key == Enum.KeyCode.Unknown then return end
-                if input.UserInputType == Enum.UserInputType.Keyboard
-                   and input.KeyCode == state.key then
-                    if callback then callback(state.key) end
-                end
-            end)
+uis.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if state.listening then return end
+    if state.key == nil or state.key == Enum.KeyCode.Unknown then return end
+
+    local triggered = false
+
+    if typeof(state.key) == "EnumItem" then
+        if state.key.EnumType == Enum.KeyCode then
+            triggered = input.UserInputType == Enum.UserInputType.Keyboard
+                     and input.KeyCode == state.key
+        else
+            triggered = input.UserInputType == state.key
+        end
+    end
+
+    if triggered and callback then callback(state.key) end
+end)
 
             state.setValue = function(key)
                 stopListen()
