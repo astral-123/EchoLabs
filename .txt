@@ -1,14 +1,3 @@
---[[
-    PhantomLibrary.lua  v5 (KEYBIND SYSTEM - STYLE BLACK OPS NOIR & BLANC)
-    Style : Game Cheat Menu (Black Ops aesthetic)
-    – Onglets en bas (Boutons rectangulaires)
-    – Checkboxes avec ✓ blanches
-    – Fond NOIR profond, style épuré
-    – Accent : BLANC
-    – Système de Keybind complet
-    – AUCUNE ligne d'indicateur en bas
-]]
-
 local library = {
     flags     = {},
     _elements = {},
