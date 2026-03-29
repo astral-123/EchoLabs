@@ -1,5 +1,5 @@
 --[[
-Kern - Library (fixed dropdown + keybind)
+Kern
 ]]
 
 local library = {
@@ -464,18 +464,22 @@ function library:CreateWindow(title, hidekey)
             return state
         end
 
-        -- ── DROPDOWN (FIXED) ─────────────────────────────────
+        -- ── DROPDOWN ────────────────────────────────────────
         function api:AddDropdown(text, options, default, callback, flagName)
-            local state = { value = default or options[1] }
+            local state = { value = default or (options[1] or "") }
             if flagName then
                 library.flags[flagName] = state.value
                 library._elements[flagName] = { type = "dropdown", ref = state, cb = callback }
             end
 
+            local ROW_H  = 20
+            local ITEM_H = 22
+            local open   = false
+
+            -- Conteneur dans le scroll (juste le bouton visible)
             local cont2 = Instance.new("Frame", scroll)
             cont2.Size               = UDim2.new(1, 0, 0, 38)
             cont2.BackgroundTransparency = 1
-            cont2.ZIndex             = 1
 
             local lbl_ = Instance.new("TextLabel", cont2)
             lbl_.Size               = UDim2.new(1, 0, 0, 14)
@@ -487,10 +491,10 @@ function library:CreateWindow(title, hidekey)
             lbl_.TextXAlignment     = Enum.TextXAlignment.Left
 
             local drop = Instance.new("TextButton", cont2)
-            drop.Size             = UDim2.new(1, 0, 0, 22)
+            drop.Size             = UDim2.new(1, 0, 0, ITEM_H)
             drop.Position         = UDim2.new(0, 0, 0, 14)
             drop.BackgroundColor3 = library.theme.surface
-            drop.Text             = "  "..(default or options[1] or "")
+            drop.Text             = "  "..(state.value)
             drop.TextColor3       = library.theme.text
             drop.Font             = library.theme.font_reg
             drop.TextSize         = 12
@@ -499,7 +503,7 @@ function library:CreateWindow(title, hidekey)
             stroke(drop, library.theme.border, 1)
 
             local arrow = Instance.new("TextLabel", drop)
-            arrow.Size                   = UDim2.fromOffset(20, 22)
+            arrow.Size                   = UDim2.fromOffset(20, ITEM_H)
             arrow.Position               = UDim2.new(1, -22, 0, 0)
             arrow.BackgroundTransparency = 1
             arrow.Text                   = "▼"
@@ -508,18 +512,14 @@ function library:CreateWindow(title, hidekey)
             arrow.TextSize               = 9
             arrow.TextXAlignment         = Enum.TextXAlignment.Center
 
-            -- FIX: liste dans un ScreenGui séparé avec IgnoreGuiInset
-            -- pour que AbsolutePosition corresponde exactement
-            local listSg = Instance.new("ScreenGui", coregui)
-            listSg.Name           = "PhDropList"
-            listSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            listSg.IgnoreGuiInset = true
-            listSg.Enabled        = false
-
-            local list = Instance.new("Frame", listSg)
-            list.Size             = UDim2.fromOffset(0, 0)
+            -- La liste flotte dans le ScreenGui principal
+            -- On la place dans sg (le ScreenGui de la fenetre) avec ZIndex eleve
+            -- car sg a IgnoreGuiInset = true, les AbsolutePositions correspondent
+            local list = Instance.new("Frame", W.sg)
+            list.Size             = UDim2.fromOffset(100, 0)
             list.BackgroundColor3 = library.theme.surface
-            list.ZIndex           = 500
+            list.Visible          = false
+            list.ZIndex           = 600
             list.BorderSizePixel  = 0
             list.ClipsDescendants = true
             stroke(list, library.theme.border, 1)
@@ -527,64 +527,63 @@ function library:CreateWindow(title, hidekey)
             local listLayout = Instance.new("UIListLayout", list)
             listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-            local open = false
-
-            local function closeList()
-                open = false
-                tw:Create(list, TweenInfo.new(0.08), { Size = UDim2.fromOffset(list.AbsoluteSize.X, 0) }):Play()
-                tw:Create(arrow, TweenInfo.new(0.1), { Rotation = 0 }):Play()
-                task.delay(0.1, function() listSg.Enabled = false end)
-            end
-
-            local function openList()
-                -- Recalcule la position a chaque ouverture
-                local ab = drop.AbsolutePosition
-                local w  = drop.AbsoluteSize.X
-                local h2 = #options * 20
-
-                -- IgnoreGuiInset: AbsolutePosition est en coordonnees ecran directes
-                list.Position = UDim2.fromOffset(ab.X, ab.Y + drop.AbsoluteSize.Y + 2)
-                list.Size     = UDim2.fromOffset(w, 0)
-                listSg.Enabled = true
-                tw:Create(list, TweenInfo.new(0.12), { Size = UDim2.fromOffset(w, h2) }):Play()
-                tw:Create(arrow, TweenInfo.new(0.1), { Rotation = 180 }):Play()
-            end
-
-            drop.MouseButton1Click:Connect(function()
-                if open then closeList() else openList() end
-                open = not open
-            end)
-
-            local function selOpt(opt)
-                drop.Text  = "  "..opt
-                state.value = opt
-                if flagName then library.flags[flagName] = opt end
-                closeList()
-                open = false
-                if callback then callback(opt) end
-            end
-
-            state.setValue = function(opt)
-                drop.Text   = "  "..opt
-                state.value = opt
-                if callback then callback(opt) end
-            end
-
             for i, opt in ipairs(options) do
                 local ob = Instance.new("TextButton", list)
-                ob.Size               = UDim2.new(1, 0, 0, 20)
+                ob.Size               = UDim2.new(1, 0, 0, ROW_H)
                 ob.BackgroundTransparency = 1
                 ob.Text               = "  "..opt
                 ob.TextColor3         = library.theme.dim
                 ob.Font               = library.theme.font_reg
                 ob.TextSize           = 12
                 ob.TextXAlignment     = Enum.TextXAlignment.Left
-                ob.ZIndex             = 501
+                ob.ZIndex             = 601
                 ob.LayoutOrder        = i
-                ob.MouseEnter:Connect(function()  ob.TextColor3 = library.theme.text end)
-                ob.MouseLeave:Connect(function()  ob.TextColor3 = library.theme.dim  end)
-                ob.MouseButton1Click:Connect(function() selOpt(opt) end)
+                ob.MouseEnter:Connect(function()
+                    ob.BackgroundTransparency = 0.7
+                    ob.BackgroundColor3       = library.theme.border
+                    ob.TextColor3             = library.theme.text
+                end)
+                ob.MouseLeave:Connect(function()
+                    ob.BackgroundTransparency = 1
+                    ob.TextColor3             = library.theme.dim
+                end)
+                ob.MouseButton1Click:Connect(function()
+                    state.value = opt
+                    drop.Text   = "  "..opt
+                    if flagName then library.flags[flagName] = opt end
+                    if callback then callback(opt) end
+                    -- ferme
+                    open = false
+                    tw:Create(list, TweenInfo.new(0.08), { Size = UDim2.fromOffset(list.AbsoluteSize.X, 0) }):Play()
+                    task.delay(0.09, function() list.Visible = false end)
+                    tw:Create(arrow, TweenInfo.new(0.1), { Rotation = 0 }):Play()
+                end)
             end
+
+            local function closeList()
+                open = false
+                tw:Create(arrow, TweenInfo.new(0.1), { Rotation = 0 }):Play()
+                tw:Create(list, TweenInfo.new(0.08), {
+                    Size = UDim2.fromOffset(list.AbsoluteSize.X, 0)
+                }):Play()
+                task.delay(0.1, function() list.Visible = false end)
+            end
+
+            drop.MouseButton1Click:Connect(function()
+                if open then
+                    closeList(); return
+                end
+                open = true
+                -- Recalcule position a chaque ouverture
+                local ab = drop.AbsolutePosition
+                local w  = math.max(drop.AbsoluteSize.X, 120)
+                local h2 = #options * ROW_H
+                list.Position = UDim2.fromOffset(ab.X, ab.Y + ITEM_H + 2)
+                list.Size     = UDim2.fromOffset(w, 0)
+                list.Visible  = true
+                tw:Create(list, TweenInfo.new(0.12), { Size = UDim2.fromOffset(w, h2) }):Play()
+                tw:Create(arrow, TweenInfo.new(0.1), { Rotation = 180 }):Play()
+            end)
 
             -- Click dehors = ferme
             uis.InputBegan:Connect(function(i)
@@ -593,15 +592,19 @@ function library:CreateWindow(title, hidekey)
                 local mx = uis:GetMouseLocation()
                 local function inBox(f)
                     if not f or not f.Parent then return false end
-                    local p = f.AbsolutePosition
-                    local s = f.AbsoluteSize
-                    return mx.X >= p.X and mx.X <= p.X + s.X
-                       and mx.Y >= p.Y and mx.Y <= p.Y + s.Y
+                    local ap = f.AbsolutePosition; local as = f.AbsoluteSize
+                    return mx.X >= ap.X and mx.X <= ap.X + as.X
+                       and mx.Y >= ap.Y and mx.Y <= ap.Y + as.Y
                 end
-                if not inBox(list) and not inBox(drop) then
-                    closeList(); open = false
-                end
+                if not inBox(list) and not inBox(drop) then closeList() end
             end)
+
+            state.setValue = function(opt)
+                state.value = opt
+                drop.Text   = "  "..opt
+                if flagName then library.flags[flagName] = opt end
+                if callback then callback(opt) end
+            end
 
             return state
         end
