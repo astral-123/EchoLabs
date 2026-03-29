@@ -1,5 +1,5 @@
 --[[
-Kern
+Kern - Library (fixed dropdown + keybind)
 ]]
 
 local library = {
@@ -24,40 +24,9 @@ local coregui  = game:GetService("CoreGui")
 local players  = game:GetService("Players")
 local run      = game:GetService("RunService")
 local stats    = game:GetService("Stats")
-local lighting = game:GetService("Lighting")
 local http     = game:GetService("HttpService")
 
-local CF = "phantom_configs"
-local AL = "phantom_autoload.txt"
-
 local function safe(fn, ...) local ok, r = pcall(fn, ...); return ok and r or nil end
-
-local function ensureFolder()
-    if isfolder and not isfolder(CF) and makefolder then makefolder(CF) end
-end
-local function saveConfigFile(name, data)
-    ensureFolder()
-    if writefile then writefile(CF.."/"..name..".json", http:JSONEncode(data)); return true end
-    return false
-end
-local function loadConfigFile(name)
-    local raw = safe(readfile, CF.."/"..name..".json")
-    if raw then return safe(http.JSONDecode, http, raw) end
-    return nil
-end
-local function deleteConfigFile(name)
-    local p = CF.."/"..name..".json"
-    if isfile and isfile(p) and delfile then delfile(p) end
-end
-local function getAutoLoad()
-    if isfile and isfile(AL) and readfile then
-        local v = safe(readfile, AL)
-        return (v and v ~= "") and v or nil
-    end
-end
-local function setAutoLoad(name)
-    if writefile then writefile(AL, name or "") end
-end
 
 local function corner(p, r)
     local c = Instance.new("UICorner", p)
@@ -80,15 +49,20 @@ local function mkColorPicker(anchor, cur_col, on_change)
     for _, c in ipairs(coregui:GetChildren()) do
         if c.Name == "PhCP" then c:Destroy() end
     end
-    local sg = Instance.new("ScreenGui", coregui); sg.Name = "PhCP"
+    local sg = Instance.new("ScreenGui", coregui)
+    sg.Name = "PhCP"
     sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.IgnoreGuiInset = true
 
     local pop = Instance.new("Frame", sg)
     pop.Size             = UDim2.fromOffset(212, 218)
     pop.BackgroundColor3 = library.theme.bg
-    pop.BorderSizePixel  = 0; pop.ZIndex = 100
+    pop.BorderSizePixel  = 0
+    pop.ZIndex           = 100
     stroke(pop, library.theme.border, 1)
+
     local abs = anchor.AbsolutePosition
+    -- IgnoreGuiInset = true, donc pas de +36 a ajouter
     pop.Position = UDim2.fromOffset(abs.X, abs.Y + anchor.AbsoluteSize.Y + 4)
 
     local h, s, v = Color3.toHSV(cur_col)
@@ -167,7 +141,7 @@ local function mkColorPicker(anchor, cur_col, on_change)
 
     local cb = Instance.new("TextButton", pop)
     cb.Size = UDim2.new(1, -16, 0, 18); cb.Position = UDim2.new(0, 8, 1, -24)
-    cb.BackgroundColor3 = library.theme.surface; cb.Text = "Fermer"
+    cb.BackgroundColor3 = library.theme.surface; cb.Text = "Close"
     cb.TextColor3 = library.theme.dim; cb.Font = library.theme.font; cb.TextSize = 11
     cb.BorderSizePixel = 0
     stroke(cb, library.theme.border, 1)
@@ -189,7 +163,12 @@ end
 -- WATERMARK
 -- ─────────────────────────────────────────────────────────────
 function library:CreateWatermark()
-    local sg = Instance.new("ScreenGui", coregui); sg.Name = "PhantomWM"
+    for _, c in ipairs(coregui:GetChildren()) do
+        if c.Name == "PhantomWM" then c:Destroy() end
+    end
+    local sg = Instance.new("ScreenGui", coregui)
+    sg.Name = "PhantomWM"
+    sg.IgnoreGuiInset = true
     local f  = Instance.new("Frame", sg)
     f.Size = UDim2.fromOffset(200, 24); f.Position = UDim2.new(0, 10, 0, 10)
     f.BackgroundColor3 = library.theme.bg; f.BorderSizePixel = 0
@@ -207,12 +186,12 @@ function library:CreateWatermark()
         while sg and sg.Parent do
             run.RenderStepped:Wait()
             local now = os.clock(); local dt = now - lastT; lastT = now
-            local fps = dt > 0 and math.floor(1/dt) or 0
+            local fps  = dt > 0 and math.floor(1/dt) or 0
             local ping = "0"
             pcall(function()
                 ping = tostring(math.floor(stats.Network.ServerStatsItem["Data Ping"]:GetValue()))
             end)
-            lbl.Text = "phantom | "..fps.." FPS | "..ping.." MS"
+            lbl.Text = "kern | "..fps.." FPS | "..ping.." MS"
         end
     end)
 end
@@ -223,7 +202,9 @@ end
 function library:Notify(title, text, dur)
     local sg = coregui:FindFirstChild("PhantomNotif")
     if not sg then
-        sg = Instance.new("ScreenGui", coregui); sg.Name = "PhantomNotif"
+        sg = Instance.new("ScreenGui", coregui)
+        sg.Name = "PhantomNotif"
+        sg.IgnoreGuiInset = true
     end
     local f = Instance.new("Frame", sg)
     f.Size = UDim2.fromOffset(220, 50); f.Position = UDim2.new(1, 20, 1, -60)
@@ -251,8 +232,10 @@ function library:CreateWindow(title, hidekey)
     hidekey = hidekey or Enum.KeyCode.Insert
     local W = { tabs = {}, active_tab = nil, visible = true, is_interacting = false }
 
-    local sg = Instance.new("ScreenGui", coregui); sg.Name = "PhantomMain"
+    local sg = Instance.new("ScreenGui", coregui)
+    sg.Name = "PhantomMain"
     sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.IgnoreGuiInset = true  -- FIX: evite le decalage de 36px du topbar Roblox
     W.sg = sg
 
     local frame = Instance.new("Frame", sg)
@@ -272,7 +255,7 @@ function library:CreateWindow(title, hidekey)
     local title_lbl = Instance.new("TextLabel", topbar)
     title_lbl.Size                   = UDim2.new(1, 0, 1, 0)
     title_lbl.BackgroundTransparency = 1
-    title_lbl.Text                   = title or "phantom"
+    title_lbl.Text                   = title or "kern"
     title_lbl.TextColor3             = library.theme.text
     title_lbl.Font                   = library.theme.font
     title_lbl.TextSize               = 13
@@ -481,7 +464,7 @@ function library:CreateWindow(title, hidekey)
             return state
         end
 
-        -- ── DROPDOWN ────────────────────────────────────────
+        -- ── DROPDOWN (FIXED) ─────────────────────────────────
         function api:AddDropdown(text, options, default, callback, flagName)
             local state = { value = default or options[1] }
             if flagName then
@@ -492,6 +475,7 @@ function library:CreateWindow(title, hidekey)
             local cont2 = Instance.new("Frame", scroll)
             cont2.Size               = UDim2.new(1, 0, 0, 38)
             cont2.BackgroundTransparency = 1
+            cont2.ZIndex             = 1
 
             local lbl_ = Instance.new("TextLabel", cont2)
             lbl_.Size               = UDim2.new(1, 0, 0, 14)
@@ -524,30 +508,45 @@ function library:CreateWindow(title, hidekey)
             arrow.TextSize               = 9
             arrow.TextXAlignment         = Enum.TextXAlignment.Center
 
-            local list = Instance.new("Frame", W.sg)
+            -- FIX: liste dans un ScreenGui séparé avec IgnoreGuiInset
+            -- pour que AbsolutePosition corresponde exactement
+            local listSg = Instance.new("ScreenGui", coregui)
+            listSg.Name           = "PhDropList"
+            listSg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            listSg.IgnoreGuiInset = true
+            listSg.Enabled        = false
+
+            local list = Instance.new("Frame", listSg)
             list.Size             = UDim2.fromOffset(0, 0)
             list.BackgroundColor3 = library.theme.surface
-            list.Visible          = false
-            list.ZIndex           = 200
+            list.ZIndex           = 500
             list.BorderSizePixel  = 0
             list.ClipsDescendants = true
             stroke(list, library.theme.border, 1)
-            Instance.new("UIListLayout", list)
+
+            local listLayout = Instance.new("UIListLayout", list)
+            listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
             local open = false
+
             local function closeList()
-                open = false; list.Visible = false
-                tw:Create(list,  TweenInfo.new(0.08), { Size     = UDim2.fromOffset(drop.AbsoluteSize.X, 0) }):Play()
-                tw:Create(arrow, TweenInfo.new(0.1),  { Rotation = 0 }):Play()
+                open = false
+                tw:Create(list, TweenInfo.new(0.08), { Size = UDim2.fromOffset(list.AbsoluteSize.X, 0) }):Play()
+                tw:Create(arrow, TweenInfo.new(0.1), { Rotation = 0 }):Play()
+                task.delay(0.1, function() listSg.Enabled = false end)
             end
+
             local function openList()
+                -- Recalcule la position a chaque ouverture
                 local ab = drop.AbsolutePosition
                 local w  = drop.AbsoluteSize.X
                 local h2 = #options * 20
+
+                -- IgnoreGuiInset: AbsolutePosition est en coordonnees ecran directes
                 list.Position = UDim2.fromOffset(ab.X, ab.Y + drop.AbsoluteSize.Y + 2)
                 list.Size     = UDim2.fromOffset(w, 0)
-                list.Visible  = true
-                tw:Create(list,  TweenInfo.new(0.1), { Size     = UDim2.fromOffset(w, h2) }):Play()
+                listSg.Enabled = true
+                tw:Create(list, TweenInfo.new(0.12), { Size = UDim2.fromOffset(w, h2) }):Play()
                 tw:Create(arrow, TweenInfo.new(0.1), { Rotation = 180 }):Play()
             end
 
@@ -557,17 +556,21 @@ function library:CreateWindow(title, hidekey)
             end)
 
             local function selOpt(opt)
-                drop.Text  = "  "..opt; state.value = opt
+                drop.Text  = "  "..opt
+                state.value = opt
                 if flagName then library.flags[flagName] = opt end
-                closeList(); open = false
-                if callback then callback(opt) end
-            end
-            state.setValue = function(opt)
-                drop.Text = "  "..opt; state.value = opt
+                closeList()
+                open = false
                 if callback then callback(opt) end
             end
 
-            for _, opt in ipairs(options) do
+            state.setValue = function(opt)
+                drop.Text   = "  "..opt
+                state.value = opt
+                if callback then callback(opt) end
+            end
+
+            for i, opt in ipairs(options) do
                 local ob = Instance.new("TextButton", list)
                 ob.Size               = UDim2.new(1, 0, 0, 20)
                 ob.BackgroundTransparency = 1
@@ -576,27 +579,35 @@ function library:CreateWindow(title, hidekey)
                 ob.Font               = library.theme.font_reg
                 ob.TextSize           = 12
                 ob.TextXAlignment     = Enum.TextXAlignment.Left
-                ob.ZIndex             = 201
+                ob.ZIndex             = 501
+                ob.LayoutOrder        = i
                 ob.MouseEnter:Connect(function()  ob.TextColor3 = library.theme.text end)
                 ob.MouseLeave:Connect(function()  ob.TextColor3 = library.theme.dim  end)
                 ob.MouseButton1Click:Connect(function() selOpt(opt) end)
             end
 
+            -- Click dehors = ferme
             uis.InputBegan:Connect(function(i)
-                if open and i.UserInputType == Enum.UserInputType.MouseButton1 then
-                    local mx = uis:GetMouseLocation()
-                    local function inBox(f)
-                        return mx.X >= f.AbsolutePosition.X and mx.X <= f.AbsolutePosition.X + f.AbsoluteSize.X
-                           and mx.Y >= f.AbsolutePosition.Y and mx.Y <= f.AbsolutePosition.Y + f.AbsoluteSize.Y
-                    end
-                    if not inBox(list) and not inBox(drop) then closeList(); open = false end
+                if not open then return end
+                if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+                local mx = uis:GetMouseLocation()
+                local function inBox(f)
+                    if not f or not f.Parent then return false end
+                    local p = f.AbsolutePosition
+                    local s = f.AbsoluteSize
+                    return mx.X >= p.X and mx.X <= p.X + s.X
+                       and mx.Y >= p.Y and mx.Y <= p.Y + s.Y
+                end
+                if not inBox(list) and not inBox(drop) then
+                    closeList(); open = false
                 end
             end)
+
             return state
         end
 
         -- ── COLOR PICKER ────────────────────────────────────
-        function api:AddColorPicker(text, default, callback)
+        function api:AddColorPicker(text, default, callback, flagName)
             local row = Instance.new("Frame", scroll)
             row.Size               = UDim2.new(1, 0, 0, 28)
             row.BackgroundTransparency = 1
@@ -620,9 +631,12 @@ function library:CreateWindow(title, hidekey)
             lbl_.TextXAlignment         = Enum.TextXAlignment.Left
 
             local cur = { value = default or library.theme.accent }
+            if flagName then library.flags[flagName] = cur.value end
+
             sw.MouseButton1Click:Connect(function()
                 mkColorPicker(sw, cur.value, function(c)
                     cur.value = c; sw.BackgroundColor3 = c
+                    if flagName then library.flags[flagName] = c end
                     if callback then callback(c) end
                 end)
             end)
@@ -666,7 +680,7 @@ function library:CreateWindow(title, hidekey)
         function api:AddKeybind(text, default, callback, flagName)
             local state = { key = default or Enum.KeyCode.Unknown, listening = false }
             if flagName then
-                library.flags[flagName]    = state.key
+                library.flags[flagName]     = state.key
                 library._elements[flagName] = { type = "keybind", ref = state, cb = callback }
                 library._keybinds[flagName] = state
             end
@@ -724,41 +738,33 @@ function library:CreateWindow(title, hidekey)
 
                 listenConn = uis.InputBegan:Connect(function(input, gameProcessed)
                     if gameProcessed then return end
-
-                    -- Escape = annulation
                     if input.UserInputType == Enum.UserInputType.Keyboard
                        and input.KeyCode == Enum.KeyCode.Escape then
                         keybtn.Text       = "[ "..keyName(state.key).." ]"
                         keybtn.TextColor3 = library.theme.accent
-                        stopListen()
-                        return
+                        stopListen(); return
                     end
-
-                    -- Clavier
                     if input.UserInputType == Enum.UserInputType.Keyboard then
                         state.key = input.KeyCode
-                    -- Souris
                     elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
                         state.key = Enum.UserInputType.MouseButton1
                     elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
                         state.key = Enum.UserInputType.MouseButton2
                     elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
                         state.key = Enum.UserInputType.MouseButton3
-                    else
-                        return
-                    end
+                    else return end
 
                     keybtn.Text       = "[ "..keyName(state.key).." ]"
                     keybtn.TextColor3 = library.theme.accent
                     if flagName then library.flags[flagName] = state.key end
+                    -- FIX: passe la key au callback (utile pour mettre a jour aimbot.key1 etc.)
+                    if callback then callback(state.key) end
                     stopListen()
                 end)
             end
 
-            -- Clic gauche = écoute
             keybtn.MouseButton1Click:Connect(startListen)
 
-            -- Clic droit = reset
             keybtn.MouseButton2Click:Connect(function()
                 stopListen()
                 state.key         = Enum.KeyCode.Unknown
@@ -767,7 +773,6 @@ function library:CreateWindow(title, hidekey)
                 if flagName then library.flags[flagName] = state.key end
             end)
 
-            -- Hover
             keybtn.MouseEnter:Connect(function()
                 if not state.listening then
                     tw:Create(keybtn, TweenInfo.new(0.1), { BackgroundColor3 = library.theme.border }):Play()
@@ -775,25 +780,6 @@ function library:CreateWindow(title, hidekey)
             end)
             keybtn.MouseLeave:Connect(function()
                 tw:Create(keybtn, TweenInfo.new(0.1), { BackgroundColor3 = library.theme.surface }):Play()
-            end)
-
-            -- Listener global : déclenche callback quand touche pressée
-            uis.InputBegan:Connect(function(input, gameProcessed)
-                if gameProcessed then return end
-                if state.listening then return end
-                if state.key == nil or state.key == Enum.KeyCode.Unknown then return end
-
-                local triggered = false
-                if typeof(state.key) == "EnumItem" then
-                    if state.key.EnumType == Enum.KeyCode then
-                        triggered = input.UserInputType == Enum.UserInputType.Keyboard
-                                 and input.KeyCode == state.key
-                    else
-                        triggered = input.UserInputType == state.key
-                    end
-                end
-
-                if triggered and callback then callback(state.key) end
             end)
 
             state.setValue = function(key)
@@ -841,7 +827,6 @@ function library:CreateWindow(title, hidekey)
 
         local left_content_frame = Instance.new("Frame", tab.frame)
         left_content_frame.Size             = UDim2.new(0.5, -1, 1, 0)
-        left_content_frame.Position         = UDim2.new(0, 0, 0, 0)
         left_content_frame.BackgroundTransparency = 1
         left_content_frame.ClipsDescendants = true
         local lp = Instance.new("UIPadding", left_content_frame)
