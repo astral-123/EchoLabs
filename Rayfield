@@ -1,15 +1,3 @@
---[[
-	Rayfield Interface Suite - ÉDITION CYAN
-	by Sirius (modifié)
-	
-	NOUVEAUTÉS :
-	- Thème Cyan avec dégradé de bleus (foncé → normal → clair)
-	- Boutons transparents avec animations
-	- Redimensionnement GUI (coin bas droite)
-	- Image de fond personnalisable (ID: 72488127242884)
-	- Toggles et éléments adaptatifs au redimensionnement
-]]
-
 if debugX then
 	warn('Initialisation de Rayfield - Édition Cyan')
 end
