@@ -3227,4 +3227,141 @@ task.delay(4, function()
 	end
 end)
 
+-- ============================================
+-- FONCTION POUR METTRE L'IMAGE DE FOND DANS LE GUI
+-- ============================================
+local function setBackgroundInGUI()
+    -- Chercher le Main Frame du GUI
+    local mainFrame = Rayfield:FindFirstChild("Main")
+    if not mainFrame then return end
+    
+    -- Supprimer l'ancienne image si elle existe
+    local oldBg = mainFrame:FindFirstChild("CustomBackground")
+    if oldBg then oldBg:Destroy() end
+    
+    -- Créer la nouvelle image de fond à l'INTÉRIEUR du GUI
+    local background = Instance.new("ImageLabel")
+    background.Name = "CustomBackground"
+    background.Size = UDim2.new(1, 0, 1, 0)
+    background.Position = UDim2.new(0, 0, 0, 0)
+    background.BackgroundTransparency = 1
+    background.Image = "rbxassetid://72488127242884"
+    background.ImageTransparency = 0.85
+    background.ScaleType = Enum.ScaleType.Crop
+    background.ZIndex = 0
+    background.Parent = mainFrame
+    
+    -- Mettre l'image derrière tout (envoyer au fond)
+    background.ZIndex = -1
+end
+
+-- ============================================
+-- BOUTON DE REDIMENSIONNEMENT EN BAS A DROITE
+-- ============================================
+local ResizeButton = nil
+local Resizing = false
+local StartSize = nil
+local StartMouse = nil
+local MinSize = Vector2.new(400, 300)
+local MaxSize = Vector2.new(1200, 800)
+
+local function createResizeButtonUI()
+    if ResizeButton then return end
+    
+    -- Chercher le Main Frame
+    local mainFrame = Rayfield:FindFirstChild("Main")
+    if not mainFrame then return end
+    
+    -- Créer le bouton en bas à DROITE
+    ResizeButton = Instance.new("ImageButton")
+    ResizeButton.Name = "ResizeButton"
+    ResizeButton.Size = UDim2.new(0, 25, 0, 25)
+    ResizeButton.Position = UDim2.new(1, -35, 1, -35)  -- BAS DROITE
+    ResizeButton.AnchorPoint = Vector2.new(1, 1)
+    ResizeButton.BackgroundTransparency = 1
+    ResizeButton.Image = "rbxassetid://10137941941"
+    ResizeButton.ImageColor3 = Color3.fromRGB(0, 200, 255)
+    ResizeButton.ImageTransparency = 0.5
+    ResizeButton.ZIndex = 1000
+    ResizeButton.Parent = mainFrame
+    
+    -- Effet hover
+    ResizeButton.MouseEnter:Connect(function()
+        TweenService:Create(ResizeButton, TweenInfo.new(0.2), {ImageTransparency = 0, ImageColor3 = Color3.fromRGB(0, 220, 255)}):Play()
+    end)
+    ResizeButton.MouseLeave:Connect(function()
+        TweenService:Create(ResizeButton, TweenInfo.new(0.2), {ImageTransparency = 0.5, ImageColor3 = Color3.fromRGB(0, 200, 255)}):Play()
+    end)
+    
+    -- Redimensionnement
+    ResizeButton.MouseButton1Down:Connect(function()
+        Resizing = true
+        StartMouse = UserInputService:GetMouseLocation()
+        StartSize = Vector2.new(Rayfield.AbsoluteSize.X, Rayfield.AbsoluteSize.Y)
+        ResizeButton.Image = "rbxassetid://11036884234"
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and Resizing then
+            Resizing = false
+            ResizeButton.Image = "rbxassetid://10137941941"
+        end
+    end)
+    
+    RunService.RenderStepped:Connect(function()
+        if Resizing then
+            local mousePos = UserInputService:GetMouseLocation()
+            local delta = mousePos - StartMouse
+            local newWidth = math.clamp(StartSize.X + delta.X, MinSize.X, MaxSize.X)
+            local newHeight = math.clamp(StartSize.Y + delta.Y, MinSize.Y, MaxSize.Y)
+            
+            Rayfield.Size = UDim2.new(0, newWidth, 0, newHeight)
+            
+            -- Recentrer si besoin
+            local screenSize = getService("Camera").ViewportSize
+            Rayfield.Position = UDim2.new(0.5, -newWidth/2, 0.5, -newHeight/2)
+        end
+    end)
+end
+
+-- ============================================
+-- FONCTION POUR RENDRE LES BOUTONS TRANSPARENTS
+-- ============================================
+local function makeAllButtonsTransparent()
+    task.wait(0.5) -- Attendre que l'UI soit chargée
+    
+    local mainFrame = Rayfield:FindFirstChild("Main")
+    if not mainFrame then return end
+    
+    local elements = mainFrame:FindFirstChild("Elements")
+    if not elements then return end
+    
+    for _, tab in ipairs(elements:GetChildren()) do
+        for _, element in ipairs(tab:GetChildren()) do
+            if element.Name == "Button" and element:IsA("Frame") then
+                element.BackgroundTransparency = 0.85
+                element.BackgroundColor3 = Color3.fromRGB(0, 170, 220)
+                
+                local originalColor = element.BackgroundColor3
+                element.MouseEnter:Connect(function()
+                    TweenService:Create(element, TweenInfo.new(0.2), {BackgroundTransparency = 0.6, BackgroundColor3 = Color3.fromRGB(0, 200, 255)}):Play()
+                end)
+                element.MouseLeave:Connect(function()
+                    TweenService:Create(element, TweenInfo.new(0.2), {BackgroundTransparency = 0.85, BackgroundColor3 = originalColor}):Play()
+                end)
+            end
+        end
+    end
+end
+
+-- ============================================
+-- LANCER LES MODIFICATIONS APRÈS CHARGEMENT
+-- ============================================
+task.spawn(function()
+    task.wait(1) -- Attendre que l'interface soit chargée
+    setBackgroundInGUI()
+    createResizeButtonUI()
+    makeAllButtonsTransparent()
+end)
+
 return RayfieldLibrary
